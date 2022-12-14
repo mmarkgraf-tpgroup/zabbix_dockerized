@@ -1,0 +1,20 @@
+---
+# defaults file for tp.zabbix_configure
+tp_zabbix_configure_automation_user: not-zabbix
+tp_zabbix_configure_automation_user_password: not-zabbix
+
+tp_zabbix_configure_server_name: zabbix-server
+tp_zabbix_configure_server_vip: 192.168.0.1
+tp_zabbix_configure_frontend_url: http://localhost:8080
+tp_zabbix_configure_api_url: "{{ tp_zabbix_configure_frontend_url }}/api_jsonrpc.php"
+
+tp_zabbix_configure_proxies: {}
+
+tp_zabbix_configure_admins_ldap_group: Zabbix Admins (ldap-authenticated)
+tp_zabbix_configure_admins_security_group: some_ad_group
+
+tp_zabbix_configure_api_timeout: "{{ monitoring_api_timeout }}"
+
+tp_zabbix_configure_monitoring_server_url: "{{ monitoring_automation_url }}"
+tp_zabbix_configure_monitoring_login_password: "{{ monitoring_automation_user_password }}"
+tp_zabbix_configure_monitoring_login_user: "{{ monitoring_automation_user }}"

@@ -1,0 +1,22 @@
+---
+- name: template out the uninstall-script
+  template:
+    src: UNinstall_partitioning.sh.j2
+    dest: /usr/local/bin/uninstall_partitioning.sh
+    owner: "{{ dbmonitoring_partitioning_db_superuser }}"
+    group: "{{ dbmonitoring_partitioning_db_superuser }}"
+    mode: '0750'
+  become: True
+
+- name: "Cancel partitioning of database {{ dbmonitoring_partitioning_dbname }}"
+  shell:
+    cmd: /usr/local/bin/uninstall_partitioning.sh
+  become: True
+  become_user: "{{ dbmonitoring_partitioning_db_superuser }}"
+
+- name: Remove cronjob for daily cleanup
+  ansible.builtin.cron:
+    name: daily partition cleanup
+    state: absent
+    cron_file: daily_partition_cleanup
+  become: True

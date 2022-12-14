@@ -1,0 +1,35 @@
+---
+
+- name: Create a new Zabbix template from json
+  community.zabbix.zabbix_template:
+    template_json: "{{ tp_zabbix_check_template_yaml }}"
+    link_templates: "{{ tp_zabbix_check_template_link_templates }}"
+    macros: "{{ tp_zabbix_check_template_macros }}"
+    state: "{{ tp_zabbix_check_template_state }}"
+    server_url: "{{ tp_zabbix_check_template_server_url }}"
+    login_user: "{{ tp_zabbix_check_template_login_user }}"
+    login_password: "{{ tp_zabbix_check_template_login_password }}"
+    timeout: "{{ tp_zabbix_check_api_timeout }}"
+  delegate_to: localhost
+  run_once: True
+  when:
+    - tp_zabbix_check_template_yaml | length > 0
+
+- name: Create a new Zabbix template from xml
+  community.zabbix.zabbix_template:
+    template_xml: "{{ tp_zabbix_check_template_xml }}"
+    link_templates: "{{ tp_zabbix_check_template_link_templates }}"
+    macros: "{{ tp_zabbix_check_template_macros }}"
+    state: "{{ tp_zabbix_check_template_state }}"
+    server_url: "{{ tp_zabbix_check_template_server_url }}"
+    login_user: "{{ tp_zabbix_check_template_login_user }}"
+    login_password: "{{ tp_zabbix_check_template_login_password }}"
+    timeout: "{{ tp_zabbix_check_api_timeout }}"
+  delegate_to: localhost
+  run_once: True
+  when:
+    - tp_zabbix_check_template_xml | length > 0
+
+- name: Include OS-specific tasks
+  ansible.builtin.include_tasks: "{{ ansible_os_family }}.yml"
+  when: ansible_os_family is defined

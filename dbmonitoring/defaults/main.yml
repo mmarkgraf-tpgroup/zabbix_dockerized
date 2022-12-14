@@ -1,0 +1,92 @@
+---
+# defaults for dbmonitoring
+dbmonitoring_service_name: dbmonitoring
+dbmonitoring_pg_hba:
+  - user: monitoring
+  - user: all
+    method: "ldap ldapserver={{ ansible_domain }} ldapprefix= ldapsuffix="
+dbmonitoring_data_lv_size: 950G
+dbmonitoring_xlog_lv_size: 30G
+dbmonitoring_archive_lv_size: 24G
+dbmonitoring_db_archive_mode: on
+dbmonitoring_hostname_state_relation:
+  '01': PRIMARY
+  '03': BACKUP
+dbmonitoring_service_state: "{{ dbmonitoring_hostname_state_relation[ansible_hostname[-2:]] | default('REPLICA') }}"
+
+# make these settings dependent of available RAM
+#? values from https://pgtune.leopard.in.ua/
+dbmonitoring_shared_buffers: "{{ (ansible_memtotal_mb * 0.25) | int }}MB"
+dbmonitoring_effective_cache_size: "{{ (ansible_memtotal_mb * 0.75) | int}}MB"
+dbmonitoring_max_connections: 100
+dbmonitoring_maintenance_work_mem: 768MB
+dbmonitoring_checkpoint_completion_target: 0.9
+#! dbmonitoring_default_statistics_target = 500
+dbmonitoring_random_page_cost: 1.1
+dbmonitoring_effective_io_concurrency: 200
+dbmonitoring_work_mem: 1966kB
+dbmonitoring_min_wal_size: 4GB
+dbmonitoring_max_wal_size: 16GB
+dbmonitoring_max_parallel_workers_per_gather: 4
+dbmonitoring_max_parallel_workers: 8
+dbmonitoring_max_parallel_maintenance_workers: 4
+
+# user for zabbix
+dbmonitoring_db_name: monitoring
+dbmonitoring_db_username: monitoring
+dbmonitoring_db_password: Sup3rS3cr3t  #! You will likely want to overwrite this from group_vars.
+
+# defaults partitioning
+dbmonitoring_partitioning_service_name: "{{ dbmonitoring_service_name }}"
+dbmonitoring_partitioning_dbname: "{{ dbmonitoring_db_name }}"
+dbmonitoring_partitioning_dbowner: "{{ dbmonitoring_db_username }}"
+dbmonitoring_partitioning_db_superuser: postgres
+
+dbmonitoring_partitioning_install: yes
+dbmonitoring_partitioning_purge: no
+
+dbmonitoring_partitioning_logdir: /var/log/dbpartitioning
+
+dbmonitoring_partitioning_daily_retention: 7 days
+dbmonitoring_partitioning_monthly_retention: 12 months
+dbmonitoring_partitioning_cleanup_log_retention: 21
+
+dbmonitoring_user_role_attr_flags:
+  - LOGIN
+  - SUPERUSER
+  - CREATEDB
+  - INHERIT
+
+dbmonitoring_disks:
+#  sda:
+#    size: 30GB
+#    scsi_controller: 0
+#    unit_number: 0
+#    scsi_type: paravirtual
+  sdb:
+    size: 1000GB
+    scsi_controller: 1
+    unit_number: 0
+    scsi_type: paravirtual
+  sdc:
+    size: 35GB
+    scsi_controller: 2
+    unit_number: 0
+    scsi_type: paravirtual
+  sdd:
+    size: 25GB
+    scsi_controller: 3
+    unit_number: 0
+    scsi_type: paravirtual
+
+# Cleanup cron setup to run every 48H
+dbmonitoring_holdback_days_backup: 2
+dbmonitoring_holdback_days_wal: 0
+
+# packages
+dbmonitoring_needed_packages:
+  - python3-psycopg2
+
+# hosts redacted
+dbmonitoring_storage_backup_host: /net/dbbackup.some.where/srv/replaceme
+dbmonitoring_storage_archive_host: /net/dbarchive.some.where/srv/replacme

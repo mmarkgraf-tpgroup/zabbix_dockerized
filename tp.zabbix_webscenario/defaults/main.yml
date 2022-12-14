@@ -1,0 +1,26 @@
+---
+tp_zabbix_webscenario_host_name: tp_zabbix_webscenario_host_name
+tp_zabbix_webscenario_name: tp_zabbix_webscenario_name
+tp_zabbix_webscenario_agent: Zabbix
+tp_zabbix_webscenario_application_name: tp_zabbix_webscenario_application_name
+tp_zabbix_webscenario_authentication: 0 # 1 -> basic auth, 2 -> ntlm
+tp_zabbix_webscenario_delay: 1m
+tp_zabbix_webscenario_http_password:
+tp_zabbix_webscenario_http_proxy:
+tp_zabbix_webscenario_http_user:
+tp_zabbix_webscenario_retries: 1
+tp_zabbix_webscenario_ssl_cert_file:
+tp_zabbix_webscenario_ssl_key_file:
+tp_zabbix_webscenario_ssl_key_password:
+tp_zabbix_webscenario_status: enabled
+tp_zabbix_webscenario_state: present
+tp_zabbix_webscenario_verify_host: True
+tp_zabbix_webscenario_verify_peer: True
+tp_zabbix_webscenario_force: True
+tp_zabbix_webscenario_steps: []
+
+tp_zabbix_webscenario_login_user: "{{ monitoring_automation_user }}"
+tp_zabbix_webscenario_login_password: "{{ monitoring_automation_user_password }}"
+tp_zabbix_webscenario_server_url: "{{ monitoring_automation_url }}"
+
+tp_zabbix_webscenario_api_timeout: "{{ monitoring_api_timeout }}"

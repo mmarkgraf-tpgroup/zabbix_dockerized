@@ -1,0 +1,33 @@
+---
+
+- name: Create group for ldap-login
+  community.zabbix.zabbix_usergroup:
+    server_url: "{{ monitoring_automation_url }}"
+    login_user: "{{ monitoring_automation_user }}"
+    login_password: "{{ monitoring_automation_user_password }}"
+    name: "{{ tp_zabbix_ldap_users_service_name }}"
+    gui_access: LDAP
+    state: present
+    rights: "{{ tp_zabbix_ldap_users_rights }}"
+    timeout: "{{ tp_zabbix_ldap_users_api_timeout }}"
+  delegate_to: localhost
+
+- name: Find users for the group {{ tp_zabbix_ldap_users_service_name }} in ldap
+  community.general.ldap_search:
+    server_uri: "{{ monitoring_ldap_url }}"
+    dn: "{{ monitoring_ldap_base_dn }}"
+    bind_dn: "{{ monitoring_ldap_bind_dn }}"
+    bind_pw: "{{ monitoring_ldap_bind_password }}"
+    scope: "children"
+    attrs: "{{ monitoring_ldap_attributes }}"
+    filter: "{{ monitoring_ldap_filter | replace('sec_tg_cs_monitoring_none', tp_zabbix_ldap_users_security_group) }}"
+    validate_certs: "{{ monitoring_ldap_validate_certs | default('yes') }}"
+  delegate_to: localhost
+  register: tp_zabbix_ldap_users_query
+  changed_when: false
+
+- name: Create or update users
+  include_tasks: create_user.yml
+  loop: "{{ tp_zabbix_ldap_users_query.results }}"
+  loop_control:
+    loop_var: loop_zabbix_user

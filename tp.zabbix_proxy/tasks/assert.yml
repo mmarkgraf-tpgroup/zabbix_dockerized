@@ -1,0 +1,319 @@
+---
+- name: test if tp_zabbix_proxy_service_name is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_service_name is defined
+      - tp_zabbix_proxy_service_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_service_user is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_service_user is defined
+      - tp_zabbix_proxy_service_user is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_service_group is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_service_group is defined
+      - tp_zabbix_proxy_service_group is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_zbx_server is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_zbx_server is defined
+      - tp_zabbix_proxy_zbx_server is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_version is set correctly
+# version can be a mix of string and numbers
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_version is defined
+      - tp_zabbix_proxy_version is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_enabled is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_enabled is defined
+      - tp_zabbix_proxy_javagateway_enabled is boolean
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_enabled is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_enabled is defined
+      - tp_zabbix_proxy_snmptraps_enabled is boolean
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_container_name is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_name is defined
+      - tp_zabbix_proxy_container_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_container_image is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_image is defined
+      - tp_zabbix_proxy_container_image is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_container_image_version is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_image_version is defined
+      - tp_zabbix_proxy_container_image_version is not boolean
+      - tp_zabbix_proxy_container_image_version | type_debug != 'list'
+      - tp_zabbix_proxy_container_image_version | type_debug != 'dict'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_container_etc_hosts is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_etc_hosts is defined
+      - tp_zabbix_proxy_container_etc_hosts | type_debug == 'dict'
+    quiet: yes
+
+- name: test if ip tp_zabbix_proxy_container_etc_hosts in are all valid
+  ansible.builtin.assert:
+    that:
+      - loop_ip.value | ansible.netcommon.ipaddr
+    quiet: yes
+  loop: "{{ tp_zabbix_proxy_container_etc_hosts | dict2items }}"
+  loop_control:
+    loop_var: loop_ip
+  when:
+    - tp_zabbix_proxy_container_etc_hosts is defined
+    - tp_zabbix_proxy_container_etc_hosts | type_debug == 'dict'
+    - tp_zabbix_proxy_container_etc_hosts | length > 0
+
+- name: test if tp_zabbix_proxy_container_networks is a list
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_networks is defined
+      - tp_zabbix_proxy_container_networks | type_debug == 'list'
+    quiet: yes
+    fail_msg: 'Must be a (possibly empty) list of dicts. Dict MUST contain at least the "name" key and its value.'
+- name: test if each tp_zabbix_proxy_container_network contains a valid dict
+  ansible.builtin.assert:
+    that: tp_zabbix_proxy_container_network.name is defined
+    quiet: yes
+    fail_msg: 'Dicts in the list MUST contain at least the "name" key and its value.'
+  loop: "{{ tp_zabbix_proxy_container_networks }}"
+  loop_control:
+    loop_var: tp_zabbix_proxy_container_network
+  when:
+    - tp_zabbix_proxy_container_networks | type_debug == 'list'
+    - tp_zabbix_proxy_container_networks | length > 0
+
+- name: test if tp_zabbix_proxy_container_env is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_env is defined
+      - tp_zabbix_proxy_container_env | type_debug == 'dict'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_container_volumes is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_volumes is defined
+      - tp_zabbix_proxy_container_volumes | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_container_restart_policy is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_restart_policy is defined
+      - tp_zabbix_proxy_container_restart_policy is string
+      - tp_zabbix_proxy_container_restart_policy is in ['always', 'unless-stopped', 'no', 'on-failure']
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_container_ports is set correctly
+# Todo: needs a better check
+# Items can be either "port" or "port:port" or "ip-address:port:port"
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_container_ports is defined
+      - tp_zabbix_proxy_container_ports | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_name is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_name is defined
+      - tp_zabbix_proxy_javagateway_container_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_image is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_image is defined
+      - tp_zabbix_proxy_javagateway_container_image is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_image_version is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_image_version is defined
+      - tp_zabbix_proxy_javagateway_container_image_version is not boolean
+      - tp_zabbix_proxy_javagateway_container_image_version | type_debug != 'list'
+      - tp_zabbix_proxy_javagateway_container_image_version | type_debug != 'dict'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_env is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_env is defined
+      - tp_zabbix_proxy_javagateway_container_env | type_debug == 'dict'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_volumes is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_volumes is defined
+      - tp_zabbix_proxy_javagateway_container_volumes | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_restart_policy is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_restart_policy is defined
+      - tp_zabbix_proxy_javagateway_container_restart_policy is string
+      - tp_zabbix_proxy_javagateway_container_restart_policy in ['always', 'unless-stopped', 'no', 'on-failure']
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_ports is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_ports is defined
+      - tp_zabbix_proxy_javagateway_container_ports | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_javagateway_container_etc_hosts is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_javagateway_container_etc_hosts is defined
+      - tp_zabbix_proxy_javagateway_container_etc_hosts | type_debug == 'dict'
+    quiet: yes
+- name: test if ip tp_zabbix_proxy_javagateway_container_etc_hosts in are all valid
+  ansible.builtin.assert:
+    that:
+      - loop_ip.value | ansible.netcommon.ipaddr
+    quiet: yes
+  loop: "{{ tp_zabbix_proxy_javagateway_container_etc_hosts | dict2items }}"
+  loop_control:
+    loop_var: loop_ip
+  when:
+    - tp_zabbix_proxy_javagateway_container_etc_hosts is defined
+    - tp_zabbix_proxy_javagateway_container_etc_hosts | type_debug == 'dict'
+    - tp_zabbix_proxy_javagateway_container_etc_hosts | length > 0
+
+- name: test if tp_zabbix_proxy_snmptraps_container_name is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_name is defined
+      - tp_zabbix_proxy_snmptraps_container_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_container_image is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_image is defined
+      - tp_zabbix_proxy_snmptraps_container_image is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_container_image_version is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_image_version is defined
+      - tp_zabbix_proxy_snmptraps_container_image_version is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_container_env is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_env is defined
+      - tp_zabbix_proxy_snmptraps_container_env | type_debug == 'dict'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_container_volumes is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_volumes is defined
+      - tp_zabbix_proxy_snmptraps_container_volumes | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_container_restart_policy is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_restart_policy is defined
+      - tp_zabbix_proxy_snmptraps_container_restart_policy is string
+      - tp_zabbix_proxy_snmptraps_container_restart_policy in ['always', 'unless-stopped', 'no', 'on-failure']
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_container_ports is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_ports is defined
+      - tp_zabbix_proxy_snmptraps_container_ports | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_snmptraps_container_etc_hosts is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_snmptraps_container_etc_hosts is defined
+      - tp_zabbix_proxy_snmptraps_container_etc_hosts | type_debug == 'dict'
+    quiet: yes
+- name: test if ip tp_zabbix_proxy_snmptraps_container_etc_hosts in are all valid
+  ansible.builtin.assert:
+    that:
+      - loop_ip.value | ansible.netcommon.ipaddr
+    quiet: yes
+  loop: "{{ tp_zabbix_proxy_snmptraps_container_etc_hosts | dict2items }}"
+  loop_control:
+    loop_var: loop_ip
+  when:
+    - tp_zabbix_proxy_snmptraps_container_etc_hosts is defined
+    - tp_zabbix_proxy_snmptraps_container_etc_hosts | type_debug == 'dict'
+    - tp_zabbix_proxy_snmptraps_container_etc_hosts | length > 0
+
+- name: test if tp_zabbix_proxy_keepalived_state is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_keepalived_state is defined
+      - tp_zabbix_proxy_keepalived_state is string
+      - tp_zabbix_proxy_keepalived_state in ['MASTER', 'BACKUP']
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_keepalived_vip_hostnames is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_keepalived_vip_hostnames is defined
+      - tp_zabbix_proxy_keepalived_vip_hostnames | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_keepalived_vip_interface is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_keepalived_vip_interface is defined
+      - tp_zabbix_proxy_keepalived_vip_interface in "{{ ansible_interfaces }}"
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_keepalived_check_process is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_keepalived_check_process is defined
+      - tp_zabbix_proxy_keepalived_check_process is string
+    quiet: yes
+
+- name: test if tp_zabbix_proxy_keepalived_virtual_router_id is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_proxy_keepalived_virtual_router_id is defined
+      - tp_zabbix_proxy_keepalived_virtual_router_id is integer
+    quiet: yes

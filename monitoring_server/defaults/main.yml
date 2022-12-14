@@ -1,0 +1,30 @@
+---
+# defaults file for monitoring_server
+monitoring_server_service_name: monitoring-server
+monitoring_server_service_fqdn: "{{ monitoring_server_service_name }}.{{ ansible_domain }}"
+monitoring_server_container_image_version: alpine-5.2-latest
+
+monitoring_server_db_host: dbmonitoring
+monitoring_server_db_name: monitoring
+monitoring_server_db_username: monitoring
+monitoring_server_db_password: Sup3rS3cr3t
+
+monitoring_server_agent_target_group: "{{ groups['monitoring_server'] }}"
+
+# disable houskeeping, as we are partitioning our db instead.
+# Quotes are necessary!
+monitoring_server_housekeeping_frequency: '0'
+
+
+monitoring_server_container_zbx_CacheSize: 96M
+monitoring_server_container_zbx_HistoryCacheSize: 64M
+monitoring_server_container_zbx_HistoryIndexCacheSize: 16M
+monitoring_server_container_zbx_StartDiscoverers: 3
+monitoring_server_container_zbx_Timeout: '10'
+monitoring_server_container_zbx_TrendCacheSize: 24M
+monitoring_server_container_zbx_VMwareCacheSize: 378M  # Not needed during normal operation, but as soon as the server restarts :-/
+monitoring_server_container_zbx_ValueCacheSize: 32M
+monitoring_server_container_zbx_startdbsyncers: 6
+monitoring_server_container_zbx_startlldprocessors: 5
+monitoring_server_container_zbx_StartTrappers: 5
+monitoring_server_container_zbx_StartPollers: 5

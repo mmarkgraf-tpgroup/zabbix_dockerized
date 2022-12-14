@@ -1,0 +1,12 @@
+---
+- name: "Ensure folder {{ tp_zabbix_check_agentd_conf_dir }} exists"
+  ansible.windows.win_file:
+    path: "{{ tp_zabbix_check_agentd_conf_dir }}"
+    state: directory
+
+- name: Ensure UserParameters are configured on the system
+  ansible.windows.win_template:
+    src: UserParameters.conf.j2
+    dest: "{{ tp_zabbix_check_agentd_conf_dir }}/UserParameter.conf"
+  notify: restart zabbix-agent-win
+  when: tp_zabbix_check_user_parameter | length > 0

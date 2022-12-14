@@ -1,0 +1,76 @@
+---
+- name: Include sanity-checks
+  ansible.builtin.include_tasks: assert.yml
+  tags:
+    - never
+    - debug
+
+- name: Lookup ip-adresses for active servers
+  ansible.builtin.set_fact:
+    monitoring_agent_active_servers: "{{ monitoring_agent_active_servers + lookup('community.general.dig', item, wantlist=True) }}"
+  loop: "{{ monitoring_agent_target_group }}"
+  tags:
+    - always
+
+- name: Include OS-dependent vars
+  ansible.builtin.include_vars: "{{ monitoring_agent_os_dependent_vars_file }}"
+  tags:
+    - always
+
+- name: Include role tp.zabbix_agent
+  ansible.builtin.include_role:
+    name: tp.zabbix_agent
+  vars:
+    tp_zabbix_agent_active_servers: "{{ monitoring_agent_active_servers + monitoring_agent_additional_servers | default([]) }}"
+    tp_zabbix_agent_container_image_version: "{{ monitoring_agent_container_image_version }}"
+    tp_zabbix_agent_installation_style: "{{ monitoring_agent_installation_style | default('package') }}"
+    tp_zabbix_agent_mode: "{{ monitoring_agent_mode }}"
+    tp_zabbix_agent_package: "{{ monitoring_agent_package }}"
+    tp_zabbix_agent_purge: "{{ monitoring_agent_purge }}"
+    tp_zabbix_agent_repo: "{{ monitoring_agent_repo }}"
+    tp_zabbix_agent_use_repo: "{{ monitoring_agent_use_repo }}"
+    tp_zabbix_agent_zbx_server: "{{ monitoring_agent_zbx_server }}"
+  when: ansible_os_family in ['Debian', 'RedHat']
+  tags:
+    - change_id
+
+- name: Include role tp.win_zabbix_agent
+  ansible.builtin.include_role:
+    name: tp.win_zabbix_agent
+  vars:
+    tp_win_zabbix_agent_active_servers: "{{ monitoring_agent_active_servers | default([]) }}"
+    tp_win_zabbix_agent_container_image_version: "{{ monitoring_agent_container_image_version }}"
+    tp_win_zabbix_agent_installation_style: "{{ monitoring_agent_installation_style | default('package') }}"
+    tp_win_zabbix_agent_mode: "{{ monitoring_agent_mode }}"
+    tp_win_zabbix_agent_package: "{{ monitoring_agent_package }}"
+    tp_win_zabbix_agent_purge: "{{ monitoring_agent_purge }}"
+    tp_win_zabbix_agent_zbx_server: "{{ monitoring_agent_zbx_server }}"
+  when: ansible_os_family == 'Windows'
+
+- name: register agent with Zabbix server
+  ansible.builtin.include_role:
+    name: tp.zabbix_host
+  vars:
+    # need to set the python_interpreter here, as we need to override our default for rhel-hosts
+    # and that will not work with tp.zabbix_host
+    ansible_python_interpreter: /usr/bin/env python
+    tp_zabbix_host_host_name: "{{ monitoring_agent_host_name }}"
+    tp_zabbix_host_link_templates: "{{ (monitoring_agent_register_templates + monitoring_agent_register_templates_custom) | flatten | sort | unique }}"
+    tp_zabbix_host_host_groups: "{{ monitoring_agent_register_host_groups | default(['Virtual machines']) }}"
+    tp_zabbix_host_interfaces: "{{ monitoring_agent_interfaces }}"
+    tp_zabbix_host_proxy: "{{ monitoring_agent_proxy }}"
+  tags:
+    - monitoring_agent_update
+  when:
+    - not monitoring_agent_purge | bool
+    - windows_callback_localhost_working | default(True) | bool
+
+- name: unregister agent with Zabbix server
+  ansible.builtin.include_role:
+    name: tp.zabbix_host
+  vars:
+    tp_zabbix_host_host_name: "{{ monitoring_agent_host_name }}"
+    tp_zabbix_host_state: absent
+  tags:
+    - monitoring_agent_update
+  when: monitoring_agent_purge | bool

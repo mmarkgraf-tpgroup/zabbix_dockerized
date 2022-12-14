@@ -1,0 +1,13 @@
+---
+# defaults for windows
+monitoring_agent_package:
+  - name: zabbix-agent
+    version: '5.2.6'
+
+monitoring_agent_ip_address: "{{ ansible_ip_addresses | ansible.netcommon.reduce_on_network('10.0.0.0/8') | first }}"
+
+monitoring_agent_register_templates:
+  - Windows by Zabbix agent active
+
+monitoring_agent_register_host_groups:
+  - Windows

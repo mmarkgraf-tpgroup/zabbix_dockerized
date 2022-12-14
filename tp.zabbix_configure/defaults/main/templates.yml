@@ -1,0 +1,3 @@
+---
+tp_zabbix_configure_register_templates:
+  - "{{ (ansible_os_family == 'Windows') | ternary('Windows', 'Linux') }} by Zabbix agent active"

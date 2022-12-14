@@ -1,0 +1,58 @@
+---
+- name: Get host-info for {{ tp_zabbix_item_factory_host_name }}
+  community.zabbix.zabbix_host_info:
+    server_url: "{{ tp_zabbix_item_factory_automation_url }}"
+    login_user: "{{ tp_zabbix_item_factory_automation_user }}"
+    login_password: "{{ tp_zabbix_item_factory_automation_user_password }}"
+    host_name: "{{ tp_zabbix_item_factory_host_name }}"
+    timeout: "{{ tp_zabbix_item_factory_api_timeout }}"
+    exact_match: True
+    remove_duplicate: True
+  delegate_to: localhost
+  register: tp_zabbix_item_factory_dummy_host_info
+  check_mode: False
+
+- name: Login to Zabbix as automation_user
+  # This is needed where we use the API instead of the zabbix-collection.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_item_factory_automation_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: 'user.login'
+      params:
+        user: "{{ tp_zabbix_item_factory_automation_user }}"
+        password: "{{ tp_zabbix_item_factory_automation_user_password }}"
+      id: 2
+    status_code:
+      - 200
+      - 301
+    timeout: "{{ tp_zabbix_item_factory_api_timeout }}"
+  delegate_to: localhost
+  register: tp_zabbix_item_factory_api_login
+  notify: Logout of Zabbix
+  changed_when: True  # Force the handler to run.
+  check_mode: False
+
+- name: Call API to create/update Zabbix items on the dummy-host
+  ansible.builtin.include_tasks: create_item.yml
+  loop: "{{ tp_zabbix_item_factory_items }}"
+  loop_control:
+    loop_var: tp_zabbix_item_factory_item
+  when: not tp_zabbix_item_factory_items_delete | bool
+
+- name: Call API to delete Zabbix items on the dummy-host
+  ansible.builtin.include_tasks: delete_item.yml
+  loop: "{{ tp_zabbix_item_factory_items }}"
+  loop_control:
+    loop_var: tp_zabbix_item_factory_item
+  when: tp_zabbix_item_factory_items_delete | bool
+
+- name: Call API to create/update Zabbix triggers on the dummy-host
+  ansible.builtin.include_tasks: create_trigger.yml
+  loop: "{{ tp_zabbix_item_factory_triggers }}"
+  loop_control:
+    loop_var: tp_zabbix_item_factory_trigger

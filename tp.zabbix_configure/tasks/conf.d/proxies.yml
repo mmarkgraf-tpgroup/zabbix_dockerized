@@ -1,0 +1,25 @@
+---
+- name: show proxy env
+  ansible.builtin.debug:
+    msg: |
+      server_url: "{{ tp_zabbix_configure_frontend_url }}"
+      login_user: "{{ tp_zabbix_configure_automation_user }}"
+      proxies:  "{{ tp_zabbix_configure_proxies | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Create or update a virtual proxy with proxy type active
+  community.zabbix.zabbix_proxy:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    proxy_name: "{{ loop_zabbix_proxy.value.proxy_name }}"
+    description: "{{ loop_zabbix_proxy.value.description }}"
+    status: "{{ loop_zabbix_proxy.value.status }}"
+    state: "{{ loop_zabbix_proxy.value.state }}"
+    proxy_address: "{{ loop_zabbix_proxy.value.ips | join(',') }}"
+  delegate_to: localhost
+  loop: "{{ tp_zabbix_configure_proxies | dict2items }}"
+  loop_control:
+    loop_var: loop_zabbix_proxy

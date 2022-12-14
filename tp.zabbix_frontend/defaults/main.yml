@@ -1,0 +1,42 @@
+---
+tp_zabbix_frontend_service_name: tp-zabbix-frontend
+tp_zabbix_frontend_service_user: "{{ tp_zabbix_frontend_service_name }}"
+tp_zabbix_frontend_service_group: "{{ tp_zabbix_frontend_service_user }}"
+
+tp_zabbix_frontend_zabbix_server: zabbix-server
+
+tp_zabbix_frontend_db_host: dbzabbix
+tp_zabbix_frontend_db_port: 5432
+tp_zabbix_frontend_db_name: zabbix
+tp_zabbix_frontend_db_user: "{{ tp_zabbix_frontend_db_host }}"
+tp_zabbix_frontend_db_password: "{{ tp_zabbix_frontend_db_host }}"
+
+tp_zabbix_frontend_ldap_validate_certs: yes
+
+# https://hub.docker.com/r/zabbix/zabbix-web-nginx-pgsql
+tp_zabbix_frontend_container_name: zabbix-frontend
+tp_zabbix_frontend_container_image: docker-hub/zabbix/zabbix-web-nginx-pgsql
+tp_zabbix_frontend_container_image_version: alpine-latest
+tp_zabbix_frontend_container_restart_policy: unless-stopped
+tp_zabbix_frontend_container_etc_hosts: {}
+tp_zabbix_frontend_container_zbx_memorylimit: 128M
+tp_zabbix_frontend_container_env:
+  ZBX_HOSTNAME: "{{ ansible_hostname }}"
+  DB_SERVER_HOST: "{{ tp_zabbix_frontend_db_host }}"
+  DB_SERVER_PORT: "{{ tp_zabbix_frontend_db_port | string }}"
+  PHP_TZ: Europe/Berlin
+  POSTGRES_DB: "{{ tp_zabbix_frontend_db_name }}"
+  POSTGRES_PASSWORD: "{{ tp_zabbix_frontend_db_password }}"
+  POSTGRES_USER: "{{ tp_zabbix_frontend_db_user }}"
+  ZBX_SERVER_HOST: "{{ tp_zabbix_frontend_zabbix_server }}"
+  ZBX_MEMORYLIMIT: "{{ tp_zabbix_frontend_container_zbx_memorylimit }}"
+tp_zabbix_frontend_container_volumes:
+  - /etc/timezone:/etc/timezone:ro
+  - /etc/localtime:/etc/localtime:ro
+  - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+  - /srv/{{ tp_zabbix_frontend_service_name }}/conf/ldap.conf:/etc/openldap/ldap.conf:ro
+tp_zabbix_frontend_container_ports:
+  - 8080:8080
+  - 8443:8443
+
+tp_zabbix_frontend_api_timeout: "{{ monitoring_api_timeout }}"

@@ -1,0 +1,16 @@
+---
+- name: Include sanity-checks
+  include_tasks: assert.yml
+  tags:
+    - never
+    - debug
+
+- name: Install zabbix-agent {{ tp_zabbix_agent_installation_style }}
+  include_tasks: "style_{{ tp_zabbix_agent_installation_style }}.yml"
+  when: not tp_zabbix_agent_purge | bool
+  tags:
+    - always
+
+- name: Uninstall zabbix-agent {{ tp_zabbix_agent_installation_style }}
+  include_tasks: "purge_{{ tp_zabbix_agent_installation_style }}.yml"
+  when: tp_zabbix_agent_purge | bool

@@ -1,0 +1,39 @@
+---
+- name: Include role tp.docker_service
+  ansible.builtin.include_role:
+    name: tp.docker_service
+  vars:
+    tp_docker_service: "{{ tp_zabbix_agent_service_name }}"
+    tp_docker_service_user_name: "{{ tp_zabbix_agent_service_user }}"
+    tp_docker_service_user_uid: "{{ tp_zabbix_agent_service_uid }}"
+    tp_docker_service_group_name: "{{ tp_zabbix_agent_service_group }}"
+    tp_docker_service_group_gid: "{{ tp_zabbix_agent_service_gid }}"
+
+- name: Display container environment.
+  ansible.builtin.debug:
+    msg: |
+      name: "{{ tp_zabbix_agent_container_name }}"
+      hostname: "{{ ansible_hostname }}"
+      image: "{{ tp_zabbix_agent_container_image }}:{{ tp_zabbix_agent_container_image_version }}"
+      env: "{{ tp_zabbix_agent_container_env | to_nice_yaml(indent=2) }}"
+      ports: "{{ tp_zabbix_agent_container_ports | default(omit) | to_nice_yaml(indent=2) }}"
+      volumes: "{{ tp_zabbix_agent_container_volumes | default(omit) | to_nice_yaml(indent=2) }}"
+      restart_policy: "{{ tp_zabbix_agent_container_restart_policy }}"
+      etc_hosts: "{{ tp_zabbix_agent_container_etc_hosts | default(omit) | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Create zabbix agent container
+  community.docker.docker_container:
+    name: "{{ tp_zabbix_agent_container_name }}"
+    hostname: "{{ ansible_hostname }}"
+    image: "{{ tp_zabbix_agent_container_image }}:{{ tp_zabbix_agent_container_image_version }}"
+    env: "{{ tp_zabbix_agent_container_env }}"
+    ports: "{{ tp_zabbix_agent_container_ports | default(omit) }}"
+    volumes: "{{ tp_zabbix_agent_container_volumes | default(omit) }}"
+    restart_policy: "{{ tp_zabbix_agent_container_restart_policy }}"
+    etc_hosts: "{{ tp_zabbix_agent_container_etc_hosts | default(omit) }}"
+    privileged: yes
+  become: True
+  become_user: "{{ tp_zabbix_agent_service_name }}"

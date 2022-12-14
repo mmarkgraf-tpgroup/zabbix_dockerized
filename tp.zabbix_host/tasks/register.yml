@@ -1,0 +1,135 @@
+---
+
+- name: Create host groups
+  community.zabbix.zabbix_group:
+    host_groups: "{{ (tp_zabbix_host_host_groups + tp_zabbix_host_host_groups_defaults | flatten) | sort | unique }}"
+    server_url: "{{ tp_zabbix_host_server_url }}"
+    login_user: "{{ tp_zabbix_host_login_user }}"
+    login_password: "{{ tp_zabbix_host_login_password }}"
+    timeout: "{{ tp_zabbix_host_api_timeout }}"
+  delegate_to: localhost
+  tags:
+    - inventory_sync
+
+- name: Login to Zabbix as "{{ tp_zabbix_host_automation_user }}"
+  # This is needed where we use the API instead of the zabbix-collection.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_host_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: 'user.login'
+      params:
+        user: "{{ tp_zabbix_host_automation_user }}"
+        password: "{{ tp_zabbix_host_automation_user_password }}"
+      id: 2
+    status_code:
+      - 200
+      - 301
+    timeout: "{{ tp_zabbix_host_api_timeout }}"
+  delegate_to: localhost
+  register: login
+  notify: Logout of Zabbix
+  check_mode: no
+  tags:
+    - inventory_sync
+
+- name: Fetch the hosts templates, if any
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_host_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: host.get
+      auth: "{{ login.json.result }}"
+      params:
+        output: ParentTemplates
+        selectParentTemplates:
+          - name
+        filter:
+          host:
+            - "{{ ansible_fqdn }}"
+      id: 1
+    timeout: "{{ tp_zabbix_host_api_timeout }}"
+  delegate_to: localhost
+  register: tp_zabbix_host_previous_templates
+  check_mode: no
+  tags:
+    - inventory_sync
+
+- name: Update an existing host's info
+  community.zabbix.zabbix_host:
+    host_name: "{{ tp_zabbix_host_host_name }}"
+    state: "{{ tp_zabbix_host_state }}"
+    visible_name: "{{ tp_zabbix_host_visible_name }}"
+    description: "{{ tp_zabbix_host_description }}"
+    host_groups: "{{ (tp_zabbix_host_host_groups + tp_zabbix_host_host_groups_defaults | flatten) | sort | unique }}"
+    link_templates: >
+      {{
+        (
+          ( tp_zabbix_host_previous_templates.json.result[0].parentTemplates | json_query('[].name') | list )
+          + tp_zabbix_host_link_templates
+          | flatten
+        ) | sort | unique
+      }}
+    status: "{{ tp_zabbix_host_status }}"
+    interfaces: "{{ tp_zabbix_host_interfaces }}"
+    inventory_mode: "{{ tp_zabbix_host_inventory_mode }}"
+    inventory_zabbix: "{{ tp_zabbix_host_inventory_zabbix }}"
+    ipmi_authtype: "{{ tp_zabbix_host_ipmi_authtype }}"
+    ipmi_privilege: "{{ tp_zabbix_host_ipmi_privilege }}"
+    ipmi_username: "{{ tp_zabbix_host_ipmi_username }}"
+    ipmi_password: "{{ tp_zabbix_host_ipmi_password }}"
+    proxy: "{{ tp_zabbix_host_proxy }}"
+    macros: "{{ tp_zabbix_host_macros }}"
+    tags: "{{ tp_zabbix_host_tags }}"
+    server_url: "{{ tp_zabbix_host_server_url }}"
+    login_user: "{{ tp_zabbix_host_login_user }}"
+    login_password: "{{ tp_zabbix_host_login_password }}"
+    force: "{{ tp_zabbix_host_force }}"
+    timeout: "{{ tp_zabbix_host_api_timeout }}"
+  delegate_to: localhost
+  when:
+    - tp_zabbix_host_previous_templates.json.result | length > 0
+    - not tp_zabbix_host_overwrite_templates
+  changed_when: False
+  failed_when: False  # Failed monitoring should not block the common-role.
+  tags:
+    - inventory_sync
+
+- name: Create a new host (or overwrite its templates)
+  community.zabbix.zabbix_host:
+    host_name: "{{ tp_zabbix_host_host_name }}"
+    state: "{{ tp_zabbix_host_state }}"
+    visible_name: "{{ tp_zabbix_host_visible_name }}"
+    description: "{{ tp_zabbix_host_description }}"
+    host_groups: "{{ (tp_zabbix_host_host_groups + tp_zabbix_host_host_groups_defaults | flatten) | sort | unique }}"
+    link_templates: "{{ tp_zabbix_host_link_templates }}"
+    status: "{{ tp_zabbix_host_status }}"
+    interfaces: "{{ tp_zabbix_host_interfaces }}"
+    inventory_mode: "{{ tp_zabbix_host_inventory_mode }}"
+    inventory_zabbix: "{{ tp_zabbix_host_inventory_zabbix }}"
+    ipmi_authtype: "{{ tp_zabbix_host_ipmi_authtype }}"
+    ipmi_privilege: "{{ tp_zabbix_host_ipmi_privilege }}"
+    ipmi_username: "{{ tp_zabbix_host_ipmi_username }}"
+    ipmi_password: "{{ tp_zabbix_host_ipmi_password }}"
+    proxy: "{{ tp_zabbix_host_proxy }}"
+    macros: "{{ tp_zabbix_host_macros }}"
+    tags: "{{ tp_zabbix_host_tags }}"
+    server_url: "{{ tp_zabbix_host_server_url }}"
+    login_user: "{{ tp_zabbix_host_login_user }}"
+    login_password: "{{ tp_zabbix_host_login_password }}"
+    force: "{{ tp_zabbix_host_force }}"
+    timeout: "{{ tp_zabbix_host_api_timeout }}"
+  delegate_to: localhost
+  when: ( tp_zabbix_host_previous_templates.json.result | length == 0 ) or tp_zabbix_host_overwrite_templates
+  changed_when: False
+  failed_when: False  # Failed monitoring should not block the common-role.
+  tags:
+    - inventory_sync

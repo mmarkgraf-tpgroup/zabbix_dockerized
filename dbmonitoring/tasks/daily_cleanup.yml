@@ -1,0 +1,27 @@
+---
+# Need this on the host standby, too, if it should need to run as master
+# for a longer time.
+- name: template out the cleanup-script
+  template:
+    src: daily_partition_cleanup.sh.j2
+    dest: /usr/local/bin/daily_partition_cleanup.sh
+    owner: "{{ dbmonitoring_partitioning_db_superuser }}"
+    group: "{{ dbmonitoring_partitioning_db_superuser }}"
+    mode: 0750
+  become: True
+  when:
+    - dbmonitoring_service_state != 'BACKUP'
+
+# no need to run the script via cron on the hot standby.
+- name: Create a cron file under /etc/cron.d
+  ansible.builtin.cron:
+    name: daily partition cleanup
+    weekday: "*"
+    minute: "0"
+    hour: "22"
+    user: "{{ dbmonitoring_partitioning_db_superuser }}"
+    job: /usr/local/bin/daily_partition_cleanup.sh
+    cron_file: daily_partition_cleanup
+  become: True
+  when:
+    - dbmonitoring_service_state == 'PRIMARY'

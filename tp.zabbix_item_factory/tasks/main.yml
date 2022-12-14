@@ -1,0 +1,22 @@
+---
+# tasks file for roles/tp.zabbix_item_factory
+- name: Wait for frontend at {{ tp_zabbix_item_factory_automation_url }} to come up
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_item_factory_automation_url }}"
+    status_code: 200
+    timeout: "{{ tp_zabbix_item_factory_api_timeout }}"
+  delegate_to: localhost
+  register: monitoring_frontend_available
+  until: monitoring_frontend_available.status == 200
+  retries: 3
+  delay: 2
+  failed_when: False
+  run_once: True
+  check_mode: no
+
+- name: Create items and triggers
+  ansible.builtin.include_tasks: monitoring.yml
+  run_once: True
+  when:
+    - monitoring_frontend_available.status is defined  # contrary to the docs, uri does NOT always return a status.
+    - monitoring_frontend_available.status == 200

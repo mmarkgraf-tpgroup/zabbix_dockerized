@@ -1,0 +1,16 @@
+---
+- name: Create or update global macros for SNMP
+  community.zabbix.zabbix_globalmacro:
+    server_url: "{{ tp_zabbix_configure_monitoring_server_url }}"
+    login_user: "{{ tp_zabbix_configure_monitoring_login_user }}"
+    login_password: "{{ tp_zabbix_configure_monitoring_login_password }}"
+    macro_name: "{{ tp_zabbix_configure_global_macro.macro }}"
+    macro_value: "{{ tp_zabbix_configure_global_macro.value }}"
+    macro_type: "{{ tp_zabbix_configure_global_macro.type | default('text') }}"
+    state: "{{ tp_zabbix_configure_global_macro.state | default('present') }}"
+  loop: "{{ tp_zabbix_configure_global_macros }}"
+  loop_control:
+    loop_var: tp_zabbix_configure_global_macro
+  no_log: True
+  run_once: True
+  delegate_to: localhost

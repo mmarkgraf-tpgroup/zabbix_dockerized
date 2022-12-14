@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include tp.zabbix_proxy"
+      include_role:
+        name: "tp.zabbix_proxy"
+      vars:
+        tp_zabbix_proxy_container_networks:
+          - name: zabbix_proxy

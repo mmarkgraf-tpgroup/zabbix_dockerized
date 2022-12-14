@@ -1,0 +1,75 @@
+---
+# https://www.zabbix.com/documentation/5.2/en/manual/api/reference/trigger/object
+
+- name: Call API to see if zabbix-trigger already exists
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_item_factory_automation_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: trigger.get
+      auth: "{{ tp_zabbix_item_factory_api_login.json.result }}"
+      params:
+        output: extend
+        expandExpression: extend
+        hostids: "{{ tp_zabbix_item_factory_dummy_host_info.hosts[0].hostid }}"
+        search:
+          expression: "{{ tp_zabbix_item_factory_trigger.expression }}"
+      id: 3
+    timeout: "{{ tp_zabbix_item_factory_api_timeout }}"
+  delegate_to: localhost
+  register: tp_zabbix_item_factory_api_call_returns
+  check_mode: False
+
+- name: Show existing trigger
+  # This is a helper for development:
+  # Click your trigger in the frontend, then run the role with "--check -vv" and copy-paste this block to your yaml.
+  ansible.builtin.debug:
+    msg: "{{ tp_zabbix_item_factory_api_call_returns.json.result | to_nice_yaml(indent=2) }}"
+    verbosity: 2
+  check_mode: False
+
+- name: Call API to create trigger when it does not
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_item_factory_automation_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: trigger.create
+      auth: "{{ tp_zabbix_item_factory_api_login.json.result }}"
+      params: "{{ tp_zabbix_item_factory_trigger_defaults | combine(tp_zabbix_item_factory_trigger) }}"
+      id: 4
+    timeout: "{{ tp_zabbix_item_factory_api_timeout }}"
+  delegate_to: localhost
+  when:
+    - not (tp_zabbix_item_factory_api_call_returns.json.result | length)
+
+- name: Call API to update the zabbix-item otherwise
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_item_factory_automation_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: trigger.update
+      auth: "{{ tp_zabbix_item_factory_api_login.json.result }}"
+      params: >
+        {{
+          tp_zabbix_item_factory_trigger_defaults
+          | combine(tp_zabbix_item_factory_trigger)
+          | combine({ 'triggerid': tp_zabbix_item_factory_api_call_returns.json.result[0].triggerid })
+        }}
+      id: 5
+    timeout: "{{ tp_zabbix_item_factory_api_timeout }}"
+  delegate_to: localhost
+  when:
+    - (tp_zabbix_item_factory_api_call_returns.json.result | length)
+    - tp_zabbix_item_factory_api_call_returns.json.result[0].expression | default('') == tp_zabbix_item_factory_trigger.expression

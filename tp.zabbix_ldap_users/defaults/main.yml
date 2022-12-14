@@ -1,0 +1,18 @@
+---
+# defaults file for tp.zabbix_ldap_users
+
+# This is an application name, NOT an individual user.  e.g. 'monitoring', NOT 'sam.one@transporeon.com'.
+# The actual users get fetched from an AD security group.
+tp_zabbix_ldap_users_service_name: dummy
+
+# These are rights to access specific hostgroups.
+tp_zabbix_ldap_users_rights: []
+#  - host_group: some_group
+#    permission: "{{ monitoring_default_permission }}"
+
+# A security group contains no users.  Overwrite with the appropriate group for your application.
+tp_zabbix_ldap_users_security_group: monitoring_none
+
+tp_zabbix_ldap_users_api_timeout: "{{ monitoring_api_timeout }}"
+
+tp_zabbix_ldap_users_automation_url: "{{ monitoring_automation_url }}"

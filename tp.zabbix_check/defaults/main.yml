@@ -1,0 +1,22 @@
+---
+#tp_zabbix_template_template_name:
+#tp_zabbix_template_template_groups: []
+tp_zabbix_check_template_yaml: {}
+tp_zabbix_check_template_xml: ''
+tp_zabbix_check_template_link_templates: []
+tp_zabbix_check_template_macros: []
+tp_zabbix_check_template_state: present
+
+tp_zabbix_check_agent_service_name: zabbix-agent2
+
+tp_zabbix_check_template_login_user: "{{ monitoring_automation_user }}"
+tp_zabbix_check_template_login_password: "{{ monitoring_automation_user_password }}"
+tp_zabbix_check_template_server_url: "{{ monitoring_automation_url }}"
+
+tp_zabbix_check_include_dir: "{{ monitoring_agent_include_dir }}"
+tp_zabbix_check_agentd_conf_dir: "{{ (ansible_os_family == 'Windows') | ternary('C:\\ProgramData\\zabbix\\zabbix_agentd.conf.d', tp_zabbix_check_include_dir ) }}"
+tp_zabbix_check_user_parameter: {}
+
+tp_zabbix_check_api_timeout: "{{ monitoring_api_timeout}}"
+
+tp_zabbix_check_frontend_url: "{{ monitoring_automation_url }}"

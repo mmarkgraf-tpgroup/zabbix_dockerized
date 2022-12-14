@@ -1,0 +1,68 @@
+---
+- name: Include assert.yml
+  include_tasks: assert.yml
+  tags:
+    - never
+    - debug
+
+- name: Template out chk_process for zabbix-server
+  template:
+    src: chk_process.sh.j2
+    dest: /usr/local/bin/chk_process.sh
+    mode: '0750'
+  become: True
+  when: env != 'dv'
+
+- name: Template out notify-script for keepalived
+  template:
+    src: "{{ tp_zabbix_server_keepalived_notify_script_name }}.j2"
+    dest: "{{ tp_zabbix_server_keepalived_notify_script }}"
+    mode: '0750'
+    owner: "{{ tp_zabbix_server_keepalived_script_user }}"
+    group: "{{ tp_zabbix_server_keepalived_script_group }}"
+  become: True
+  when: env != 'dv'
+
+- name: Create zabbix server container
+  docker_container:
+    name: "{{ tp_zabbix_server_container_name }}"
+    hostname: "{{ tp_zabbix_server_container_hostname }}"
+    image: "{{ tp_zabbix_server_container_image }}:{{ tp_zabbix_server_container_image_version }}"
+    env: "{{ tp_zabbix_server_container_env }}"
+    ports: "{{ ( tp_zabbix_server_container_network_mode == 'host' ) | ternary(omit, tp_zabbix_server_container_ports) }}"
+    volumes: "{{ tp_zabbix_server_container_volumes | default(omit) }}"
+    restart_policy: "{{ tp_zabbix_server_container_restart_policy | default('unless-stopped') }}"
+    etc_hosts: "{{ tp_zabbix_server_container_etc_hosts | default(omit) }}"
+    state: "{{ (tp_zabbix_server_keepalived_state == 'MASTER') | ternary('started', 'stopped') }}"
+    network_mode: "{{ tp_zabbix_server_container_network_mode }}"
+  become: True
+  become_user: "{{ tp_zabbix_server_service_user }}"
+
+## Nope.  This removes the container on the fallback-server, and we need that.
+#- name: Cleanup all unused docker resources (images, containers, networks, volumes and buildcache)
+#  community.docker.docker_prune:
+#    containers: "{{ tp_zabbix_server_prune_containers }}"
+#    images: "{{ tp_zabbix_server_prune_images }}"
+#    networks: "{{ tp_zabbix_server_prune_networks }}"
+#    volumes: "{{ tp_zabbix_server_prune_volumes }}"
+#    builder_cache: "{{ tp_zabbix_server_prune_builder_cache }}"
+#  become: True
+#  become_user: "{{ tp_zabbix_server_service_user }}"
+
+- name: Include role tp.keepalived
+  include_role:
+    name: tp.keepalived
+  vars:
+    tp_keepalived_create_keepalived_script_user: True
+    tp_keepalived_global_defs_enable_script_security: "{{ tp_zabbix_server_global_defs_enable_script_security }}"
+    tp_keepalived_notify_script: "{{ tp_zabbix_server_keepalived_notify_script }}"
+    tp_keepalived_notify_script_group: "{{ tp_zabbix_server_keepalived_script_group }}"
+    tp_keepalived_notify_script_user: "{{ tp_zabbix_server_keepalived_script_user }}"
+    tp_keepalived_service_name: "{{ tp_zabbix_server_service_name }}"
+    tp_keepalived_state: "{{ tp_zabbix_server_keepalived_state }}"
+    tp_keepalived_vip_hostnames: "{{ tp_zabbix_server_keepalived_vip_hostnames }}"
+    tp_keepalived_vip_interface: "{{ tp_zabbix_server_keepalived_vip_interface }}"
+    tp_keepalived_virtual_router_id: "{{ tp_zabbix_server_keepalived_virtual_router_id }}"
+    tp_keepalived_vrrp_instances_custom: "{{ tp_zabbix_server_keepalived_vrrp_instances_custom | default({}) }}"
+    tp_keepalived_vrrp_scripts: "{{ tp_zabbix_server_keepalived_vrrp_scripts }}"
+  when: env != 'dv'

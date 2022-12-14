@@ -1,0 +1,148 @@
+---
+- name: test if tp_zabbix_agent_service_name is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_service_name is defined
+      - tp_zabbix_agent_service_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_service_user is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_service_user is defined
+      - tp_zabbix_agent_service_user is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_service_uid is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_service_uid is defined
+      - tp_zabbix_agent_service_uid is integer
+    quiet: yes
+
+- name: test if tp_zabbix_agent_service_group is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_service_group is defined
+      - tp_zabbix_agent_service_group is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_service_gid is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_service_gid is defined
+      - tp_zabbix_agent_service_gid is integer
+    quiet: yes
+
+- name: test if tp_zabbix_agent_active_servers is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_active_servers is defined
+      - tp_zabbix_agent_active_servers | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_agent_installation_style is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_installation_style is defined
+      - tp_zabbix_agent_installation_style is string
+      - tp_zabbix_agent_installation_style is in ['container', 'package']
+    quiet: yes
+
+- name: test if tp_zabbix_agent_mode is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_mode is defined
+      - tp_zabbix_agent_mode is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_zbx_server is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_zbx_server is defined
+      - tp_zabbix_agent_zbx_server is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_interface is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_interface is defined
+      - tp_zabbix_agent_interface is string
+      - tp_zabbix_agent_interface in "{{ ansible_interfaces }}"
+    quiet: yes
+
+- name: test if tp_zabbix_agent_container_name is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_name is defined
+      - tp_zabbix_agent_container_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_container_image is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_image is defined
+      - tp_zabbix_agent_container_image is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_container_image_version is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_image_version is defined
+      - tp_zabbix_agent_container_image_version is string
+    quiet: yes
+
+- name: test if tp_zabbix_agent_container_env is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_env is defined
+      - tp_zabbix_agent_container_env | type_debug == 'dict'
+    quiet: yes
+
+- name: test if tp_zabbix_agent_container_etc_hosts is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_etc_hosts is defined
+      - tp_zabbix_agent_container_etc_hosts | type_debug == 'dict'
+    quiet: yes
+
+- name: test if ip tp_zabbix_agent_container_etc_hosts in are all valid
+  ansible.builtin.assert:
+    that:
+      - loop_ip.value | ansible.netcommon.ipaddr
+    quiet: yes
+  loop: "{{ tp_zabbix_agent_container_etc_hosts | dict2items }}"
+  loop_control:
+    loop_var: loop_ip
+  when:
+    - tp_zabbix_agent_container_etc_hosts is defined
+    - tp_zabbix_agent_container_etc_hosts | type_debug == 'dict'
+    - tp_zabbix_agent_container_etc_hosts | length > 0
+
+- name: test if tp_zabbix_agent_container_volumes is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_volumes is defined
+      - tp_zabbix_agent_container_volumes | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_agent_container_restart_policy is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_restart_policy is defined
+      - tp_zabbix_agent_container_restart_policy is string
+      - tp_zabbix_agent_container_restart_policy in ['always', 'unless-stopped', 'no', 'on-failure']
+    quiet: yes
+
+- name: test if tp_zabbix_agent_container_ports is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_container_ports is defined
+      - tp_zabbix_agent_container_ports | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_agent_package is set correctly
+  ansible.builtin.assert:
+    that:
+      - tp_zabbix_agent_package is defined
+    quiet: yes

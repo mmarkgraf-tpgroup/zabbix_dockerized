@@ -1,0 +1,61 @@
+---
+- name: Include sanity-checks
+  ansible.builtin.include_tasks: assert.yml
+  tags:
+    - never
+    - debug
+
+- name: Display image version.
+  ansible.builtin.debug:
+    msg: "{{ tp_zabbix_frontend_container_image }}:{{ tp_zabbix_frontend_container_image_version }}"
+  tags:
+    - never
+    - debug
+
+- name: Display container environment
+  ansible.builtin.debug:
+    msg: "{{ tp_zabbix_frontend_container_env | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Create configuration directory for openldap
+  file:
+    state: directory
+    path: "/srv/{{ tp_zabbix_frontend_service_name }}/conf"
+  become: True
+
+- name: Create ldap.conf
+  copy:
+    dest: "/srv/{{ tp_zabbix_frontend_service_name }}/conf/ldap.conf"
+    content: |
+      #
+      # LDAP Defaults
+      #
+
+      # See ldap.conf(5) for details
+      # This file should be world readable but not world writable.
+
+      #BASE	dc=example,dc=com
+      #URI	ldap://ldap.example.com ldap://ldap-master.example.com:666
+      #SIZELIMIT	12
+      #TIMELIMIT	15
+      #DEREF		never
+      {% if not tp_zabbix_frontend_ldap_validate_certs | bool %}
+      TLS_REQCERT     never
+      {% endif %}
+
+  become: True
+
+- name: Create zabbix frontend container
+  docker_container:
+    name: "{{ tp_zabbix_frontend_container_name }}"
+    hostname: "{{ ansible_hostname }}"
+    image: "{{ tp_zabbix_frontend_container_image }}:{{ tp_zabbix_frontend_container_image_version }}"
+    env: "{{ tp_zabbix_frontend_container_env }}"
+    ports: "{{ tp_zabbix_frontend_container_ports | default(omit) }}"
+    volumes: "{{ tp_zabbix_frontend_container_volumes | default(omit) }}"
+    restart_policy: "{{ tp_zabbix_frontend_container_restart_policy | default('unless-stopped') }}"
+    etc_hosts: "{{ tp_zabbix_frontend_container_etc_hosts | default(omit) }}"
+  become: True
+  become_user: "{{ tp_zabbix_frontend_service_user }}"

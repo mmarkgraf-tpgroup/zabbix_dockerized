@@ -1,0 +1,42 @@
+galaxy_info:
+  author: marco.markgraf@transporeon.com
+  description: monitor VMware with Zabbix
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms:
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+        - bullseye
+
+  galaxy_tags:
+    - monitoring
+    - zabbix
+    - vmware
+
+dependencies:
+  - role: tp.zabbix_check
+    tp_zabbix_check_template_xml: "{{ tp_zabbix_vmware_check_template }}"
+    run_once: True
+    tags:
+      - monitoring
+  # not using tp.zabbix_dummy_host here, as we need the appropriate proxy
+  - role: tp.zabbix_host
+    tp_zabbix_host_description: "{{ tp_zabbix_vmware_host_description }}"
+    tp_zabbix_host_host_groups: "{{ tp_zabbix_vmware_host_groups }}"
+    tp_zabbix_host_host_groups_defaults: "{{ tp_zabbix_vmware_host_groups_defaults }}"
+    tp_zabbix_host_link_templates: "{{ tp_zabbix_vmware_host_link_templates }}"
+    tp_zabbix_host_host_name: "{{ tp_zabbix_vmware_host_name }}"
+    # dummy interface needed.
+    tp_zabbix_host_interfaces:
+      - ip: 127.0.0.1
+        main: 1
+        type: agent
+        useip: 1
+    run_once: True
+    tags:
+      - monitoring

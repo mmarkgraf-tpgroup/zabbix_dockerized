@@ -1,0 +1,231 @@
+---
+- name: get users and id
+  ansible.builtin.getent:
+    database: passwd
+  check_mode: False
+  no_log: True
+  tags:
+    - change_id
+
+- name: Disable and stop the service
+  ansible.builtin.service:
+    name: "{{ tp_zabbix_agent_package }}"
+    enabled: no
+    state: stopped
+  become: True
+  # if the service is not installed yet, do not fail.
+  failed_when: False
+  when:
+    - getent_passwd['zabbix'] is defined
+    - getent_passwd['zabbix'].1 | int != tp_zabbix_agent_service_uid | int or getent_passwd['zabbix'].2 | int != tp_zabbix_agent_service_gid | int
+  tags:
+    - change_id
+
+# The package doesn't put user zabbix into group zabbix m(
+- name: Create group 'zabbix'
+  ansible.builtin.group:
+    name: zabbix
+    gid: "{{ tp_zabbix_agent_service_uid }}"
+    system: True
+  notify: restart zabbix-agent
+  become: True
+  tags:
+    - change_id
+
+- name: Add user zabbix to group "zabbix"
+  ansible.builtin.user:
+    name: zabbix
+    group: zabbix
+    uid: "{{ tp_zabbix_agent_service_gid }}"
+    system: True
+    shell: /usr/sbin/nologin
+  notify: restart zabbix-agent
+  become: True
+  tags:
+    - change_id
+
+- name: Check if /var/run/zabbix/zabbix_agentd.pid
+  stat:
+    path: /var/run/zabbix/zabbix_agentd.pid
+  register: stat_result_pid
+  failed_when: false
+  tags:
+    - change_id
+
+- name: Change owner
+  file:
+    path: /var/run/zabbix/zabbix_agentd.pid
+    owner: zabbix
+    group: zabbix
+  notify: restart zabbix-agent
+  become: True
+  tags:
+    - change_id
+  when: stat_result_pid.stat.exists
+
+- name: Check if /tmp/zabbix_agent2.pid exists
+  stat:
+    path: /tmp/zabbix_agent2.pid
+  register: stat_result_pid2
+  failed_when: false
+  tags:
+    - change_id
+
+- name: Change owner
+  file:
+    path: /tmp/zabbix_agent2.pid
+    owner: zabbix
+    group: zabbix
+  notify: restart zabbix-agent
+  become: True
+  tags:
+    - change_id
+  when: stat_result_pid2.stat.exists
+
+- name: Add an Apt signing key, will not download if present
+  ansible.builtin.apt_key:
+    id: "{{ monitoring_agent_repo_key_id }}"
+    url: "{{ monitoring_agent_repo_key_url }}"
+    state: present
+  when:
+    - tp_zabbix_agent_use_repo | bool
+    - ansible_os_family == 'Debian'
+  become: True
+
+- name: Add zabbix-repo for Debian
+  ansible.builtin.apt_repository:
+    repo: "{{ tp_zabbix_agent_repo }}"
+    filename: zabbix
+  when:
+    - tp_zabbix_agent_use_repo | bool
+    - ansible_os_family == 'Debian'
+  become: True
+
+- name: Add zabbix-repo for RedHat
+  ansible.builtin.yum_repository:
+    name: zabbix
+    description: zabbix repo
+    baseurl: "{{ monitoring_agent_repo }}"
+    gpgkey: "{{ monitoring_agent_repo_key_url }}"
+  when:
+    - tp_zabbix_agent_use_repo | bool
+    - ansible_os_family == 'RedHat'
+  become: True
+
+- name: Install zabbix-packages from {{ ansible_distribution_release }}-backports
+  ansible.builtin.apt:
+    name: "{{ tp_zabbix_agent_package }}"
+    default_release: "{{ ansible_distribution_release }}-backports"
+  when:
+    - tp_zabbix_agent_use_backports | bool
+    - ansible_os_family == 'Debian'
+  notify: restart zabbix-agent
+  become: True
+  register: tp_zabbix_agent_package_installation_backport_result
+
+- name: Install zabbix extra packages from {{ ansible_distribution_release }}-backports
+  ansible.builtin.apt:
+    name: "{{ tp_zabbix_agent_packages_extra | flatten | sort | list }}"
+    default_release: "{{ ansible_distribution_release }}-backports"
+  when:
+    - tp_zabbix_agent_use_backports | bool
+    - ansible_os_family == 'Debian'
+  ignore_errors: True
+  become: True
+
+- name: Install zabbix-packages
+  ansible.builtin.package:
+    name: "{{ tp_zabbix_agent_package }}"
+  become: True
+  notify: restart zabbix-agent
+  register: tp_zabbix_agent_package_installation_result
+  when: tp_zabbix_agent_package_installation_backport_result is failed or (not tp_zabbix_agent_use_backports | bool)
+
+- name: Install zabbix extra packages
+  ansible.builtin.package:
+    name: "{{ tp_zabbix_agent_packages_extra | flatten | sort | list }}"
+  become: True
+  ignore_errors: True
+  when: tp_zabbix_agent_package_installation_backport_result is failed or not (tp_zabbix_agent_use_backports | bool)
+
+- name: "Ensure {{ tp_zabbix_agent_include_dir }} exists"
+  ansible.builtin.file:
+    path: "{{ tp_zabbix_agent_include_dir }}"
+    state: directory
+    mode: 0755
+  become: True
+
+- name: Check if additional needed groups exists
+  ansible.builtin.getent:
+    database: group
+
+- name: Add user zabbix to additional groups
+  ansible.builtin.user:
+    name: zabbix
+    groups: "{{ tp_zabbix_agent_extra_group }}"
+    append: yes
+  become: True
+  loop: "{{ tp_zabbix_agent_extra_groups }}"
+  loop_control:
+    loop_var: tp_zabbix_agent_extra_group
+  notify: restart zabbix-agent
+  when: tp_zabbix_agent_extra_group in ansible_facts.getent_group
+
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+  become: True
+  when: ansible_facts.packages is not defined or
+        tp_zabbix_agent_package_installation_backport_result is changed or
+        tp_zabbix_agent_package_installation_result is changed
+
+- name: Show agent version
+  ansible.builtin.debug:
+  # version is prefixed with "1:" in the package_facts for some reason. Suppressing with regex_replace.
+    msg: "{{ ansible_facts.packages[tp_zabbix_agent_package][0].version | regex_replace('^.*:') | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+# Todo:
+# zabbix-agent 5.0.8:
+# zabbix_agentd [90558]: Warning: EnableRemoteCommands parameter is deprecated, use AllowKey=system.run[*] or DenyKey=system.run[*] instead
+# -> one more template...
+# BUT: version comes with EnableRemoteCommands in the installed config :-/
+
+- name: Find the template for zabbix-agent by version
+  ansible.builtin.set_fact:
+    zabbix_agent_config_template: "{{ item | basename }}"
+  loop: "{{ lookup('fileglob', role_path + '/templates/' + tp_zabbix_agent_package + '.conf_*.j2').split(',') | sort }}"
+  when: >
+    item | basename
+    | replace(tp_zabbix_agent_package, '')
+    | replace('.conf_', '')
+    | replace('.j2', '' )
+    is version(ansible_facts.packages[tp_zabbix_agent_package][0].version | regex_replace('^.*:'), '<=')
+  delegate_to: localhost
+
+- name: Template out {{ zabbix_agent_config_template }} for zabbix-agent
+  ansible.builtin.template:
+    src: "{{ zabbix_agent_config_template }}"
+    dest: /etc/zabbix/zabbix_agentd.conf
+    mode: '0644'
+  notify: restart zabbix-agent
+  when: tp_zabbix_agent_package == 'zabbix-agent'
+  become: True
+
+- name: Template out {{ zabbix_agent_config_template }} for zabbix-agent2
+  ansible.builtin.template:
+    src: "{{ zabbix_agent_config_template }}"
+    dest: /etc/zabbix/zabbix_agent2.conf
+    mode: '0644'
+  notify: restart zabbix-agent
+  when: tp_zabbix_agent_package == 'zabbix-agent2'
+  become: True
+
+- name: Enable and start the service
+  ansible.builtin.service:
+    name: "{{ tp_zabbix_agent_package }}"
+    enabled: yes
+    state: started
+  become: True

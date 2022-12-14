@@ -1,0 +1,103 @@
+---
+# Why multiple plays?
+# Because otherwise tp.docker_service will not add the needed service users to the docker group.
+# And then we fail "Error connecting: Error while fetching server API version: ('Connection aborted.', error(13, 'Permission denied'))"
+- name: Preparations
+  hosts: all
+
+# this is ugly, but otherwise I don't have the needed packages to create the docker-network
+  roles:
+    - role: tp.docker_service
+      tp_docker_service: zabbix
+      tp_docker_service_lv_size: 1G
+    - role: tp.trust_certs
+
+  tasks:
+    - name: install docker sdk
+      package:
+        name: python-docker
+      become: True
+
+    - name: install curl
+      package:
+        name: curl
+      become: True
+
+    - name: create docker network
+      docker_network:
+        name: zabbixnet
+      become: True
+      become_user: zabbix
+
+- name: Converge the database
+  hosts: all
+
+  roles:
+    - role: tp.docker_db
+      vars:
+        tp_docker_db_service_name: dbzabbix
+        #tp_docker_db_name: dbzabbix
+        #tp_docker_db_user: dbzabbix
+        #tp_docker_db_password: dbzabbix
+        tp_docker_db_networks:
+          - name: zabbixnet
+
+- name: Converge the zabbix server
+  hosts: all
+
+  vars:
+    tp_zabbix_server_hostinterface: eth1
+    tp_zabbix_server_container_etc_hosts:
+      zabbix-server: 192.168.0.1
+
+  roles:
+    - role: tp.zabbix_server
+      vars:
+        tp_zabbix_server_uid: 5006
+        tp_zabbix_server_gid: 5006
+        tp_zabbix_server_network:
+          - name: zabbixnet
+        tp_zabbix_server_container_env:
+          DB_SERVER_HOST: "{{ (tp_zabbix_server_hostinterface == 'eth1') | ternary(ansible_eth1.ipv4.address, ansible_default_ipv4.address) }}"
+          DB_SERVER_PORT: '5432'
+          POSTGRES_DB: dbzabbix
+          POSTGRES_PASSWORD: dbzabbix
+          POSTGRES_USER: dbzabbix
+          ZBX_HOSTINTERFACE: "{{ tp_zabbix_server_hostinterface | default('eth0') }}"
+
+- name: Converge the zabbix agent
+  hosts: all
+
+  vars:
+    tp_zabbix_agent_interface: eth1
+    tp_zabbix_agent_active_servers:
+      - 192.168.0.1
+      - 172.17.0.1
+    tp_zabbix_agent_container_etc_hosts:
+      zabbix-server: 192.168.0.1
+  roles:
+    - role: tp.zabbix_agent
+      vars:
+        tp_zabbix_agent_installation_style: container
+        tp_zabbix_agent_zbx_server: zabbix-server
+        tp_zabbix_agent_network:
+          - name: zabbixnet
+
+- name: Converge the zabbix frontend
+  hosts: all
+
+  roles:
+    - role: "tp.zabbix_frontend"
+      vars:
+        tp_zabbix_frontend_uid: 5008
+        tp_zabbix_frontend_gid: 5008
+        tp_zabbix_frontend_network:
+          - name: zabbixnet
+        tp_zabbix_frontend_container_env:
+          ZBX_SERVER_HOST: 192.168.0.1
+          DB_SERVER_HOST:  192.168.0.1
+          POSTGRES_USER: dbzabbix
+          POSTGRES_PASSWORD: dbzabbix
+          POSTGRES_DB: dbzabbix
+        tp_zabbix_frontend_container_etc_hosts:
+          zabbix-server: 192.168.0.1

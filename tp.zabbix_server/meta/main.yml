@@ -1,0 +1,26 @@
+galaxy_info:
+  author: Marco Markgraf
+  description: setup zabbix with docker
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms:
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+
+  galaxy_tags:
+    - monitoring
+    - zabbix_server
+
+dependencies: []
+  ## Role is not published.
+  # - role: tp.docker_service
+  #   tp_docker_service: "{{ tp_zabbix_server_service_name }}"
+  #   tp_docker_service_user_name: "{{ tp_zabbix_server_service_user }}"
+  #   tp_docker_service_user_uid: "{{ tp_zabbix_server_uid | default(omit) }}"
+  #   tp_docker_service_group_name: "{{ tp_zabbix_server_service_group }}"
+  #   tp_docker_service_group_gid: "{{ tp_zabbix_server_gid | default(omit) }}"

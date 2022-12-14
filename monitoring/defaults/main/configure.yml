@@ -1,0 +1,10 @@
+---
+monitoring_automation_user: monitoring_admin
+monitoring_automation_user_password: Sup3rS3cr3t
+
+monitoring_frontend_host: localhost
+monitoring_frontend_url: "http://{{ monitoring_frontend_host }}:8080"
+monitoring_server_vip: 127.0.0.1
+monitoring_server_name: monitoring-server
+
+monitoring_proxies: {}

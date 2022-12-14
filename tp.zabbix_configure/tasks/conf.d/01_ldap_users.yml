@@ -1,0 +1,76 @@
+---
+- name: get all host_groups
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: hostgroup.get
+      auth: "{{ login.json.result }}"
+      params:
+        output: 'extend'
+      id: 3
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: tp_zabbix_configure_api_call_returns
+
+- name: Show results
+  ansible.builtin.debug:
+    verbosity: 2
+    msg: "{{ tp_zabbix_configure_api_call_returns.json.result | to_nice_yaml(indent=2) }}"
+
+- name: Generate list of hashes for hostgroups and access-rights
+  set_fact:
+    tp_zabbix_configure_ldap_users_permissions: >
+      {{
+        tp_zabbix_configure_api_call_returns.json.result
+        | json_query('[].{"host_group": name }')
+        | unique
+        | map('combine', {"permission": tp_zabbix_configure_ldap_default_permission })
+        | list
+      }}
+
+- name: Show generated list of hashes
+  ansible.builtin.debug:
+    verbosity: 2
+    msg: "{{ tp_zabbix_configure_ldap_users_permissions | to_nice_yaml(indent=2) }}"
+
+- name: configure ldap-login for admins
+  block:
+    - name: Include role tp.zabbix_ldap_users
+      include_role:
+        name: tp.zabbix_ldap_users
+      vars:
+        tp_zabbix_ldap_users_service_name: "{{ tp_zabbix_configure_admins_ldap_group }}"
+        tp_zabbix_ldap_users_security_group: "{{ tp_zabbix_configure_admins_security_group }}"
+        tp_zabbix_ldap_users_rights: "{{ tp_zabbix_configure_ldap_users_permissions }}"
+
+    - name: Configure zabbix ldap-auth but leave default "internal" on
+    # Why? Because we don't want to lock out the "Admin" Superadmin.
+    # Todo: write a plugin for the zabbix-collection
+      ansible.builtin.uri:
+        url: "{{ tp_zabbix_configure_api_url }}"
+        method: POST
+        body_format: json
+        headers:
+          Content-Type: application/json-rpc
+        body:
+          jsonrpc: '2.0'
+          auth: "{{ login.json.result }}"
+          method: authentication.update
+          params:
+            authentication_type: 0
+            ldap_configured: 1
+            ldap_host: "{{ tp_zabbix_configure_ldap_protocol }}://{{ tp_zabbix_configure_ldap_host }}"
+            ldap_port: "{{ tp_zabbix_configure_ldap_port }}"
+            ldap_base_dn: "{{ tp_zabbix_configure_ldap_base_dn }}"
+            ldap_search_attribute: userPrincipalName
+            ldap_bind_dn: "{{ tp_zabbix_configure_ldap_bind_dn }}"
+            ldap_case_sensitive: 1
+            ldap_bind_password: "{{ tp_zabbix_configure_ldap_bind_password }}"
+        timeout: "{{ tp_zabbix_configure_api_timeout }}"
+      delegate_to: localhost
+  when: tp_zabbix_configure_ldap_host | length > 0

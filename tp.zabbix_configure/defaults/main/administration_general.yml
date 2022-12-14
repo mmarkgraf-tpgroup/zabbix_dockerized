@@ -1,0 +1,56 @@
+---
+tp_configure_administration_general: {}
+
+## ===== available keys / default settings =====
+# tp_configure_administration_general:
+#   alert_usrgrpid: '7'
+#   blink_period: 2m
+#   connect_timeout: 3s
+#   custom_color: '0'
+#   default_inventory_mode: '-1'
+#   default_lang: en_GB
+#   default_theme: blue-theme
+#   default_timezone: system
+#   discovery_groupid: '5'
+#   history_period: 24h
+#   iframe_sandboxing_enabled: '1'
+#   iframe_sandboxing_exceptions: ''
+#   item_test_timeout: 60s
+#   login_attempts: '5'
+#   login_block: 30s
+#   max_in_table: '50'
+#   max_overview_table_size: '50'
+#   max_period: 2y
+#   media_type_test_timeout: 65s
+#   ok_ack_color: 009900
+#   ok_ack_style: '1'
+#   ok_period: 5m
+#   ok_unack_color: 009900
+#   ok_unack_style: '1'
+#   period_default: 1h
+#   problem_ack_color: CC0000
+#   problem_ack_style: '1'
+#   problem_unack_color: CC0000
+#   problem_unack_style: '1'
+#   script_timeout: 60s
+#   search_limit: '1000'
+#   server_check_interval: '10'
+#   severity_color_0: 97AAB3
+#   severity_color_1: 7499FF
+#   severity_color_2: FFC859
+#   severity_color_3: FFA059
+#   severity_color_4: E97659
+#   severity_color_5: E45959
+#   severity_name_0: Not classified
+#   severity_name_1: Information
+#   severity_name_2: Warning
+#   severity_name_3: Average
+#   severity_name_4: High
+#   severity_name_5: Disaster
+#   show_technical_errors: '0'
+#   snmptrap_logging: '1'
+#   socket_timeout: 3s
+#   uri_valid_schemes: http,https,ftp,file,mailto,tel,ssh
+#   validate_uri_schemes: '1'
+#   work_period: 1-5,09:00-18:00
+#   x_frame_options: SAMEORIGIN

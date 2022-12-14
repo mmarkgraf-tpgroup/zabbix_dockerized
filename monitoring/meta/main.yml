@@ -1,0 +1,51 @@
+galaxy_info:
+  author: Marco Markgraf
+  description: setup zabbix with docker
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms:
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+
+  galaxy_tags:
+    - monitoring
+    - zabbix
+
+dependencies:
+  - role: tp.zabbix_frontend
+    tp_zabbix_frontend_service_name: "{{ monitoring_service_name }}"
+    tp_zabbix_frontend_db_host: "{{ monitoring_db_host }}"
+    tp_zabbix_frontend_db_name: "{{ monitoring_db_name }}"
+    tp_zabbix_frontend_db_user: "{{ monitoring_db_username }}"
+    tp_zabbix_frontend_db_password: "{{ monitoring_db_password }}"
+    tp_zabbix_frontend_zabbix_server: "{{ monitoring_zabbix_server }}"
+    tp_zabbix_frontend_ldap_validate_certs: "{{ monitoring_ldap_validate_certs }}"
+    tp_zabbix_frontend_container_image_version: "{{ monitoring_frontend_container_image_version }}"
+    tp_zabbix_frontend_container_zbx_memorylimit: "{{ monitoring_frontend_container_zbx_memorylimit }}"
+  - role: tp.zabbix_configure
+    tp_zabbix_configure_automation_user: "{{ monitoring_automation_user }}"
+    tp_zabbix_configure_automation_user_password: "{{ monitoring_automation_user_password }}"
+    tp_zabbix_configure_frontend_url: "{{ monitoring_frontend_url }}"
+    tp_zabbix_configure_global_macros: "{{ monitoring_global_macros }}"
+    tp_zabbix_configure_ldap_attributes: "{{ monitoring_ldap_attributes }}"
+    tp_zabbix_configure_ldap_base_dn: "{{ monitoring_ldap_base_dn }}"
+    tp_zabbix_configure_ldap_bind_dn: "{{ monitoring_ldap_bind_dn }}"
+    tp_zabbix_configure_ldap_bind_password: "{{ monitoring_ldap_bind_password }}"
+    tp_zabbix_configure_ldap_default_permission: "{{ monitoring_default_permission }}"
+    tp_zabbix_configure_ldap_default_user_role: "{{ monitoring_default_user_role }}"
+    tp_zabbix_configure_ldap_filter: "{{ monitoring_ldap_filter }}"
+    tp_zabbix_configure_ldap_host: "{{ monitoring_ldap_host }}"
+    tp_zabbix_configure_ldap_port: "{{ monitoring_ldap_port }}"
+    tp_zabbix_configure_ldap_url: "{{ monitoring_ldap_url }}"
+    tp_zabbix_configure_proxies: "{{ monitoring_proxies }}"
+    tp_zabbix_configure_register_host_ip: "{{ monitoring_register_host_ip }}"
+    tp_zabbix_configure_server_name: "{{ monitoring_server_name }}"
+    tp_zabbix_configure_server_vip: "{{ monitoring_server_vip }}"
+    run_once: True
+    tags:
+      - configure

@@ -1,0 +1,91 @@
+---
+# https://docs.ansible.com/ansible/2.10/collections/community/zabbix/zabbix_action_module.html#ansible-collections-community-zabbix-zabbix-action-module
+
+- name: Fetch existing Discovery Actions
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: action.get
+      auth: "{{ login.json.result }}"
+      params:
+        output: extend
+        selectOperations: extend
+        selectFilter: extend
+        filter:
+          eventsource: 1
+      id: 3
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: existing_discovery_actions
+  tags:
+    - never
+    - debug
+
+- name: show existing discovery actions
+  ansible.builtin.debug:
+    msg: "{{ existing_discovery_actions | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+# The module wants readable options,  but the api returns numeric values :-/
+# To "copy" existing rules, look at them in the webinterface,
+# not at the api-output.  That will be much easier.
+- name: Discovery Action for Linux servers
+  community.zabbix.zabbix_action:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    name: Auto discovery. Linux servers.
+    event_source: discovery
+    state: present
+    status: enabled
+    esc_period: 60
+    conditions:
+      - type: received_value
+        formulaid: A
+        operator: like
+        value: Linux
+      - type: discovery_status
+        formulaid: B
+        operator: '='
+        value: up
+      - type: discovered_service_type
+        formulaid: C
+        operator: '='
+        value: Zabbix agent
+    formula: A and B and C
+    operations:
+      - type: add_to_host_group
+        host_groups:
+          - Linux servers
+      - type: link_to_template
+        templates:
+          - Linux by Zabbix agent active
+  delegate_to: localhost
+
+# * This is just meant as an example. Do not enable, unless you want a flood of notifications.
+- name: Report problems to ldap_users via all media
+  community.zabbix.zabbix_action:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    name: Report problems to ldap_users
+    event_source: 'trigger'
+    state: absent
+    status: disabled
+    esc_period: 60
+    conditions: []
+    operations:
+      - type: send_message
+        send_to_groups:
+          - ldap_users
+    recovery_operations:
+      - type: notify_all_involved
+  delegate_to: localhost
+  when: tp_zabbix_configure_ldap_host | length > 0

@@ -1,0 +1,41 @@
+---
+tp_zabbix_host_host_name: "{{ ansible_fqdn }}"
+tp_zabbix_host_state: present
+tp_zabbix_host_visible_name: "{{ tp_zabbix_host_host_name }}"
+tp_zabbix_host_description: "{{ tp_zabbix_host_host_name }} host managed by ansible"
+# It's okay to have lists of lists here, they get flattened and uniqued in tasks/main.yml
+tp_zabbix_host_host_groups_defaults:
+  - "{{ group_names }}"
+  - "{{ group_names | product([ansible_domain]) | map('join', '.') | list }}"
+  - "{{ stage }}"
+  - "{{ ansible_domain }}"
+  - "{{ ansible_distribution is search('Windows') | ternary('Windows', ansible_distribution) }}"
+  - "{{ ansible_distribution | replace(' ','_') }}"
+  - "{{ ansible_distribution | replace(' ','_') }}_{{ ansible_distribution_major_version }}"
+  - "{{ ansible_distribution | replace(' ','_') }}_{{ ansible_distribution_version }}"
+tp_zabbix_host_host_groups: []
+tp_zabbix_host_link_templates: []
+tp_zabbix_host_overwrite_templates: False
+tp_zabbix_host_status: enabled
+tp_zabbix_host_inventory_mode: automatic
+tp_zabbix_host_inventory_zabbix:
+  notes: managed by ansible
+tp_zabbix_host_ipmi_authtype: 0
+tp_zabbix_host_ipmi_privilege: 2
+tp_zabbix_host_ipmi_username: ''
+tp_zabbix_host_ipmi_password: ''
+tp_zabbix_host_interfaces: []
+tp_zabbix_host_proxy: "monitoring-proxy.{{ ansible_domain | default('some.where') }}"
+tp_zabbix_host_macros: []
+tp_zabbix_host_tags: []
+tp_zabbix_host_force: True
+
+tp_zabbix_host_login_user: "{{ monitoring_automation_user }}"
+tp_zabbix_host_login_password: "{{ monitoring_automation_user_password }}"
+tp_zabbix_host_server_url: "{{ monitoring_automation_url }}"
+
+tp_zabbix_host_frontend_url: "{{ monitoring_automation_url }}"
+tp_zabbix_host_api_url: "{{ tp_zabbix_host_frontend_url }}/api_jsonrpc.php"
+tp_zabbix_host_automation_user: "{{ monitoring_automation_user }}"
+tp_zabbix_host_automation_user_password: "{{ monitoring_automation_user_password }}"
+tp_zabbix_host_api_timeout: "{{ monitoring_api_timeout }}"

@@ -1,0 +1,13 @@
+---
+- name: Verify
+  hosts: zabbix_server
+  gather_facts: false
+  tasks:
+  # this doesn't tell us much, as the server does not do anything useful without
+  # agents to send data to it, or a frontend to see what happens.
+  # See the monitoring role for that.
+  - name: See if port 10051 is reachable
+    wait_for:
+      host: zabbix-server
+      port: 10051
+      timeout: 3

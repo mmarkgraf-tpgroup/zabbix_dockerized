@@ -1,0 +1,5 @@
+---
+- name: Check if OS is supported
+  ansible.builtin.assert:
+    that: ansible_os_family in ['Debian', 'Windows']
+    fail_msg: "{{ ansible_os_family }} is not supported by this role!"

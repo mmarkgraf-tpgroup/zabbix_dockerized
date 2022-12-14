@@ -1,0 +1,18 @@
+galaxy_info:
+  author: Marco Markgraf
+  description: configure Zabbix server, after the frontend has been deployed.
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms:
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+
+  galaxy_tags:
+    - zabbix
+
+dependencies: []

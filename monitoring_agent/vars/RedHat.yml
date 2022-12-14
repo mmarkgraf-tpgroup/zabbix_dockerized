@@ -1,0 +1,14 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+
+monitoring_agent_ip_address: "{{ ansible_default_ipv4.address }}"
+
+monitoring_agent_register_templates:
+  - Linux by Zabbix agent active
+
+monitoring_agent_use_repo: yes
+monitoring_agent_repo: "https://repo.zabbix.com/zabbix/5.2/rhel/{{ ansible_distribution_major_version }}/{{ ansible_architecture }}"
+monitoring_agent_repo_key_url: http://zabbixrepo.some.where/zabbix-official-repo.key
+monitoring_agent_repo_key_id: A1848F5352D022B9471D83D0082AB56BA14FE591
+
+monitoring_agent_package: zabbix-agent2

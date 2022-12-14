@@ -1,0 +1,47 @@
+---
+- name: Fetch current General Settings
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: settings.get
+      auth: "{{ login.json.result }}"
+      params:
+        output: extend
+      id: 1
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: general_settings
+  tags:
+    - never
+    - debug
+
+- name: Show general settings
+  ansible.builtin.debug:
+    msg: "{{ general_settings | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Update General settings
+# This is safe to run with an empty array tp_configure_administration_general:
+# No values will be changed.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: settings.update
+      auth: "{{ login.json.result }}"
+      params: "{{ tp_configure_administration_general }}"
+      id: 1
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: general_settings

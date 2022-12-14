@@ -1,0 +1,51 @@
+---
+# In the default setup, zabbix-server tries to find zabbix-agent at 127.0.0.1:10050
+# This won't work, as the agent is in a different container on the same vm.
+# -> update the zabbix-servers interface config
+
+- name: Adjust host-settings
+  community.zabbix.zabbix_host: #we should use tp.zabbix_host
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    host_name: Zabbix server
+    host_groups:
+      - Zabbix servers
+    interfaces:
+      - type: agent
+        main: 1
+        ip: "{{ tp_zabbix_configure_server_vip | default(ansible_default_ipv4.address) }}"
+        dns: "{{ tp_zabbix_configure_server_name |default(ansible_fqdn) }}"
+        useip: 1
+        port: "10050"
+  delegate_to: localhost
+
+- name: Fetch host info for Zabbix server
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: host.get
+      auth: "{{ login.json.result }}"
+      params:
+        filter:
+          host:
+            - Zabbix server
+      id: 5
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: zabbix_server_hostinfo
+  tags:
+    - never
+    - debug
+
+- name: Show hostinfo
+  ansible.builtin.debug:
+    msg: "{{ zabbix_server_hostinfo | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug

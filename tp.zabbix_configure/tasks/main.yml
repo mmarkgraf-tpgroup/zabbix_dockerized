@@ -1,0 +1,103 @@
+---
+# tasks file for tp.zabbix_configure
+- name: Wait for frontend at {{ tp_zabbix_configure_frontend_url }} to come up
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_frontend_url }}"
+    status_code: 200
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: result
+  until: result.status == 200
+  retries: 60
+  delay: 2
+  run_once: True
+
+- name: Try to login to Zabbix with default credentials Admin/zabbix
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: 'user.login'
+      params:
+        user: Admin
+        password: zabbix
+      id: 1
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  failed_when: false
+  register: login_default
+  changed_when: True  # otherwise the handler won't run
+  notify: Logout of Zabbix
+
+- name: Show login as default Admin
+  ansible.builtin.debug:
+    msg: "{{ login_default | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Create automation user "{{ tp_zabbix_configure_automation_user }}"
+  ansible.builtin.include_tasks: create_automation_user.yml
+  when:
+    - tp_zabbix_configure_automation_user != 'Admin'
+    - login_default.json.result is defined
+
+- name: Login to Zabbix as "{{ tp_zabbix_configure_automation_user }}"
+  # This is needed where we use the API instead of the zabbix-collection.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: 'user.login'
+      params:
+        user: "{{ tp_zabbix_configure_automation_user }}"
+        password: "{{ tp_zabbix_configure_automation_user_password }}"
+      id: 2
+    status_code:
+      - 200
+      - 301
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: login
+  when:
+    - tp_zabbix_configure_automation_user != 'Admin'
+  changed_when: True  # otherwise the handler won't run
+  notify: Logout of Zabbix
+
+- name: Show login as automation user
+  ansible.builtin.debug:
+    msg: "{{ login | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Disable default superadmin "Admin"
+  community.zabbix.zabbix_user:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    alias: Admin
+    name: Zabbix
+    surname: Administrator
+    passwd: zabbix
+    role_name: Super admin role
+    type: Zabbix super admin
+    usrgrps:
+      - Disabled
+      - Zabbix administrators
+  delegate_to: localhost
+  when: tp_zabbix_configure_automation_user != 'Admin'
+
+- name: Include all tasks from conf.d
+  ansible.builtin.include_tasks: "{{ item }}"
+  # Order matters!
+  # E.g. groups must exist before you can create trigger actions that send mail to them.
+  loop: "{{ query('fileglob', 'conf.d/*.yml') | sort }}"

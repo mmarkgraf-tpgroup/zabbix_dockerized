@@ -1,0 +1,6 @@
+---
+- name: restart zabbix-agent
+  service:
+    name: "{{ tp_zabbix_agent_package }}"
+    state: restarted
+  become: True

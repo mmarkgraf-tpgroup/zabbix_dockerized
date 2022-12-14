@@ -1,0 +1,12 @@
+---
+- name: Configure the zabbix-server
+  hosts: zabbix
+
+  tasks:
+
+    - include_role:
+        name: tp.zabbix_configure
+      vars:
+        tp_zabbix_server_hostinterface: eth1
+        tp_configure_administration_general:
+          default_timezone: Europe/Berlin

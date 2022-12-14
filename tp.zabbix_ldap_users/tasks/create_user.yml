@@ -1,0 +1,41 @@
+---
+- name: Get zabbix user info for "{{ loop_zabbix_user.userPrincipalName }}"
+  community.zabbix.zabbix_user_info:
+    server_url: "{{ monitoring_automation_url }}"
+    login_user: "{{ monitoring_automation_user }}"
+    login_password: "{{ monitoring_automation_user_password }}"
+    alias: "{{ loop_zabbix_user.userPrincipalName }}"
+    timeout: "{{ tp_zabbix_ldap_users_api_timeout }}"
+  delegate_to: localhost
+  register: result_user_info
+
+- name: Update user "{{ loop_zabbix_user.userPrincipalName }}"
+  community.zabbix.zabbix_user:
+    server_url: "{{ monitoring_automation_url }}"
+    login_user: "{{ monitoring_automation_user }}"
+    login_password: "{{ monitoring_automation_user_password }}"
+    alias: "{{ loop_zabbix_user.userPrincipalName }}"
+    name: "{{ loop_zabbix_user.givenName | default(omit) }}"
+    surname: "{{ loop_zabbix_user.sn | default(omit) }}"
+    role_name: "{{ monitoring_default_user_role }}"
+    usrgrps: "{{ ([tp_zabbix_ldap_users_service_name]+ (result_user_info.zabbix_user | json_query('usrgrps[*].name'))) | sort | unique }}"
+    timeout: "{{ tp_zabbix_ldap_users_api_timeout }}"
+  delegate_to: localhost
+  when:
+    - result_user_info.zabbix_user.usrgrps is defined
+    - result_user_info.zabbix_user.usrgrps | length > 0
+
+- name: Create user "{{ loop_zabbix_user.userPrincipalName }}"
+  community.zabbix.zabbix_user:
+    server_url: "{{ monitoring_automation_url }}"
+    login_user: "{{ monitoring_automation_user }}"
+    login_password: "{{ monitoring_automation_user_password }}"
+    alias: "{{ loop_zabbix_user.userPrincipalName }}"
+    name: "{{ loop_zabbix_user.givenName | default(omit) }}"
+    surname: "{{ loop_zabbix_user.sn | default(omit) }}"
+    role_name: "{{ monitoring_default_user_role }}"
+    usrgrps: "{{ [tp_zabbix_ldap_users_service_name] }}"
+    timeout: "{{ tp_zabbix_ldap_users_api_timeout }}"
+  delegate_to: localhost
+  when:
+    - not result_user_info.zabbix_user.usrgrps is defined

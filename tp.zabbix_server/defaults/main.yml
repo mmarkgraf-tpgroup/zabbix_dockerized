@@ -1,0 +1,109 @@
+---
+tp_zabbix_server_service_name: tp-zabbix-server
+tp_zabbix_server_service_user: "{{ tp_zabbix_server_service_name }}"
+tp_zabbix_server_service_group: "{{ tp_zabbix_server_service_user }}"
+
+tp_zabbix_server_db_host: dbzabbix
+tp_zabbix_server_db_port: 5432
+tp_zabbix_server_db_name: dbzabbix
+tp_zabbix_server_db_user: "{{ tp_zabbix_server_db_host }}"
+tp_zabbix_server_db_password: "{{ tp_zabbix_server_db_host }}"
+tp_zabbix_server_hostinterface: "{{ ansible_default_ipv4.interface }}"
+
+# See https://hub.docker.com/r/zabbix/zabbix-server-pgsql
+tp_zabbix_server_container_name: zabbix-server
+tp_zabbix_server_container_hostname: zabbix-server
+tp_zabbix_server_container_image: docker-hub/zabbix/zabbix-server-pgsql
+tp_zabbix_server_container_image_version: alpine-latest
+tp_zabbix_server_container_restart_policy: unless-stopped
+tp_zabbix_server_container_StartVMwareCollectors: '5'
+tp_zabbix_server_container_etc_hosts: {}
+tp_zabbix_server_container_housekeeping_frequency: '1'
+tp_zabbix_server_container_proxyconfig_frequency: '3600'
+tp_zabbix_server_container_zbx_CacheSize: 8M
+tp_zabbix_server_container_zbx_HistoryCacheSize: 16M
+tp_zabbix_server_container_zbx_HistoryIndexCacheSize: 4M
+tp_zabbix_server_container_zbx_StartDiscoverers: 1
+tp_zabbix_server_container_zbx_TrendCacheSize: 4M
+tp_zabbix_server_container_zbx_ValueCacheSize: 8M
+tp_zabbix_server_container_zbx_VMwareFrequency: '60'
+tp_zabbix_server_container_zbx_VMwarePerfFrequency: '60'
+tp_zabbix_server_container_zbx_VMwareCacheSize: 64M
+tp_zabbix_server_container_zbx_VMwareTimeout: '10'
+tp_zabbix_server_container_zbx_Timeout: '20'
+tp_zabbix_server_container_zbx_startlldprocessors: 2
+tp_zabbix_server_container_zbx_startdbsyncers: 4
+tp_zabbix_server_container_zbx_StartTrappers: 5
+tp_zabbix_server_container_zbx_StartPollers: 5
+tp_zabbix_server_container_zbx_DebugLevel: 3
+
+tp_zabbix_server_container_env:
+  ZBX_HOSTNAME: "{{ tp_zabbix_server_container_hostname }}"
+  DB_SERVER_HOST: "{{ tp_zabbix_server_db_host }}"
+  DB_SERVER_PORT: "{{ tp_zabbix_server_db_port | string }}"
+  POSTGRES_DB: "{{ tp_zabbix_server_db_name }}"
+  POSTGRES_PASSWORD: "{{ tp_zabbix_server_db_password }}"
+  POSTGRES_USER: "{{ tp_zabbix_server_db_user }}"
+  ZBX_CACHESIZE: "{{ tp_zabbix_server_container_zbx_CacheSize }}"
+  ZBX_VALUECACHESIZE: "{{ tp_zabbix_server_container_zbx_ValueCacheSize }}"
+  ZBX_HISTORYCACHESIZE: "{{ tp_zabbix_server_container_zbx_HistoryCacheSize }}"
+  ZBX_HISTORYINDEXCACHESIZE: "{{ tp_zabbix_server_container_zbx_HistoryIndexCacheSize }}"
+  ZBX_TRENDCACHESIZE: "{{ tp_zabbix_server_container_zbx_TrendCacheSize }}"
+  ZBX_HOSTINTERFACE: "{{ tp_zabbix_server_hostinterface }}"
+  ZBX_HOUSEKEEPINGFREQUENCY: "{{ tp_zabbix_server_container_housekeeping_frequency }}"
+  ZBX_STARTVMWARECOLLECTORS: "{{ tp_zabbix_server_container_StartVMwareCollectors }}"
+  ZBX_PROXYCONFIGFREQUENCY: "{{ tp_zabbix_server_container_proxyconfig_frequency }}"
+  ZBX_STARTDISCOVERERS: "{{ tp_zabbix_server_container_zbx_StartDiscoverers }}"
+  ZBX_VMWAREFREQUENCY: "{{ tp_zabbix_server_container_zbx_VMwareFrequency }}"
+  ZBX_VMWAREPERFFREQUENCY: "{{ tp_zabbix_server_container_zbx_VMwarePerfFrequency }}"
+  ZBX_VMWARECACHESIZE: "{{ tp_zabbix_server_container_zbx_VMwareCacheSize }}"
+  ZBX_VMWARETIMEOUT: "{{ tp_zabbix_server_container_zbx_VMwareTimeout }}"
+  ZBX_TIMEOUT: "{{ tp_zabbix_server_container_zbx_Timeout }}"
+  ZBX_STARTLLDPROCESSORS: "{{ tp_zabbix_server_container_zbx_startlldprocessors }}"
+  ZBX_STARTDBSYNCERS: "{{ tp_zabbix_server_container_zbx_startdbsyncers }}"
+  ZBX_STARTTRAPPERS: "{{ tp_zabbix_server_container_zbx_StartTrappers }}"
+  ZBX_STARTPOLLERS: "{{ tp_zabbix_server_container_zbx_StartPollers }}"
+  ZBX_DEBUGLEVEL: "{{ tp_zabbix_server_container_zbx_DebugLevel | default('3') }}"
+
+#  ZBX_SOURCEIP: "{{ ansible_default_ipv4.interface | default(omit}}"
+#  ZBX_LISTENIP: "{{ tp_zabbix_server_listen_ip | default(omit }}"
+tp_zabbix_server_container_volumes:
+  - /etc/timezone:/etc/timezone:ro
+  - /etc/localtime:/etc/localtime:ro
+  - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+tp_zabbix_server_container_ports:
+  - 10051:10051
+tp_zabbix_server_container_network_mode: host
+
+## cleanup dangling resources
+tp_zabbix_server_prune_containers: True
+tp_zabbix_server_prune_images: True
+tp_zabbix_server_prune_networks: True
+tp_zabbix_server_prune_volumes: True
+tp_zabbix_server_prune_builder_cache: True
+
+tp_zabbix_server_keepalived_state: "{{ (ansible_hostname[-2:] == '01') | ternary('MASTER', 'BACKUP') }}"
+tp_zabbix_server_keepalived_vip_hostnames: "{{ [tp_zabbix_server_service_name] }}"
+tp_zabbix_server_keepalived_vip_interface: "{{ tp_zabbix_server_hostinterface }}"
+tp_zabbix_server_keepalived_virtual_router_id: 62
+
+tp_zabbix_server_keepalived_notify_script_name: keepalived.notify.zabbix.sh
+tp_zabbix_server_keepalived_notify_script_location: /usr/local/bin
+tp_zabbix_server_keepalived_notify_script: "{{ tp_zabbix_server_keepalived_notify_script_location }}/{{ tp_zabbix_server_keepalived_notify_script_name }}"
+tp_zabbix_server_keepalived_script_user: root
+tp_zabbix_server_keepalived_script_group: docker
+
+tp_zabbix_server_keepalived_vrrp_scripts:
+  chk_process:
+    script: /usr/local/bin/chk_process.sh
+    user: root
+    interval: 1
+
+tp_zabbix_server_global_defs_enable_script_security: true
+
+tp_zabbix_server_keepalived_vrrp_instances_custom:
+  VI_1:
+    notify: "{{ tp_zabbix_server_keepalived_notify_script | default(omit) }}"
+    notify_user: "{{ tp_zabbix_server_keepalived_script_user | default(omit) }}"
+    notify_group: "{{ tp_zabbix_server_keepalived_script_group | default(omit) }}"
+    virtual_router_id: "{{ tp_zabbix_server_keepalived_virtual_router_id }}"

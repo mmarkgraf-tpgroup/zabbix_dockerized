@@ -1,0 +1,46 @@
+galaxy_info:
+  author: Marco Markgraf
+  description: setup zabbix server with docker
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms:
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+
+  galaxy_tags:
+    - monitoring
+    - zabbix
+
+dependencies:
+  ## This creates a user on the DB, unfortunately, the role is not published, so you will need to create it yourself.
+  # - role: tp.db_user
+  #   tp_db_user_host: "{{ monitoring_server_db_host | replace('.' + ansible_domain, '') }}"
+  #   tp_db_user_username: "{{ monitoring_server_db_username }}"
+  #   tp_db_user_password: "{{ monitoring_server_db_password }}"
+  - role: tp.zabbix_server
+    tp_zabbix_server_service_name: "{{ monitoring_server_service_name }}"
+    tp_zabbix_server_container_hostname: "{{ monitoring_server_service_fqdn }}"
+    tp_zabbix_server_db_host: "{{ monitoring_server_db_host }}"
+    tp_zabbix_server_db_name: "{{ monitoring_server_db_name }}"
+    tp_zabbix_server_db_user: "{{ monitoring_server_db_username }}"
+    tp_zabbix_server_db_password: "{{ monitoring_server_db_password }}"
+    tp_zabbix_server_container_image: "{{ monitoring_server_container_image }}"
+    tp_zabbix_server_container_housekeeping_frequency: "{{ monitoring_server_housekeeping_frequency }}"
+    tp_zabbix_server_container_image_version: "{{ monitoring_server_container_image_version }}"
+    tp_zabbix_server_container_zbx_CacheSize: "{{ monitoring_server_container_zbx_CacheSize }}"
+    tp_zabbix_server_container_zbx_HistoryCacheSize: "{{ monitoring_server_container_zbx_HistoryCacheSize }}"
+    tp_zabbix_server_container_zbx_HistoryIndexCacheSize: "{{ monitoring_server_container_zbx_HistoryIndexCacheSize }}"
+    tp_zabbix_server_container_zbx_StartDiscoverers: "{{ monitoring_server_container_zbx_StartDiscoverers }}"
+    tp_zabbix_server_container_zbx_StartPollers: "{{ monitoring_server_container_zbx_StartPollers }}"
+    tp_zabbix_server_container_zbx_StartTrappers: "{{ monitoring_server_container_zbx_StartTrappers }}"
+    tp_zabbix_server_container_zbx_Timeout: "{{ monitoring_server_container_zbx_Timeout }}"
+    tp_zabbix_server_container_zbx_TrendCacheSize: "{{ monitoring_server_container_zbx_TrendCacheSize }}"
+    tp_zabbix_server_container_zbx_VMwareCacheSize: "{{ monitoring_server_container_zbx_VMwareCacheSize }}"
+    tp_zabbix_server_container_zbx_ValueCacheSize: "{{ monitoring_server_container_zbx_ValueCacheSize }}"
+    tp_zabbix_server_container_zbx_startdbsyncers: "{{ monitoring_server_container_zbx_startdbsyncers }}"
+    tp_zabbix_server_container_zbx_startlldprocessors: "{{ monitoring_server_container_zbx_startlldprocessors }}"

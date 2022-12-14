@@ -1,0 +1,205 @@
+---
+# https://docs.ansible.com/ansible/2.10/collections/community/zabbix/zabbix_mediatype_module.html#ansible-collections-community-zabbix-zabbix-mediatype-module
+
+- name: Fetch current media types
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: settings.get
+      auth: "{{ login.json.result }}"
+      params:
+        output: extend
+      id: 1
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: general_settings
+  tags:
+    - never
+    - debug
+
+- name: Show general settings
+  ansible.builtin.debug:
+    msg: "{{ general_settings | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Fetch existing trigger actions
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: action.get
+      auth: "{{ login.json.result }}"
+      params:
+        output: extend
+        selectOperations: extend
+        selectRecoveryOperations: extend
+        selectAcknowledgeOperations: extend
+        selectFilter: extend
+        filter:
+          eventsource: 0
+      id: 1
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: existing_trigger_actions
+  tags:
+    - never
+    - debug
+
+- name: Show existing trigger actions
+  ansible.builtin.debug:
+    msg: "{{ existing_trigger_actions | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Reset default mediatypes.  Don't modify those.  Clone them instead.
+# * DO NOT MODIFY the default templates *
+# You may very well need multiple instances of the same mediatype.
+# E.g. one telegram-bot for work-hours and one for the on-call-duty.
+# Clone the template, make the needed modifications, export the template,
+# and copy it to files/mediatypes.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: configuration.import
+      auth: "{{ login.json.result }}"
+      params:
+        format: json
+        rules:
+          mediaTypes:
+            createMissing: true
+            updateExisting: true
+        source: "{{ lookup('file', role_path + '/files/mediatypes/zbx_export_mediatypes_default.json') }}"
+      id: 11
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  tags:
+    - never
+    - reset_mediatypes
+
+# https://www.zabbix.com/documentation/5.2/en/manual/api/reference/configuration/import
+- name: Create mediatypes
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: configuration.import
+      auth: "{{ login.json.result }}"
+      params:
+        format: yaml
+        rules:
+          mediaTypes:
+            createMissing: true
+            updateExisting: true
+        source: "{{ lookup('template', loop_mediatype) }}"
+      id: 11
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  loop: "{{ lookup('ansible.builtin.fileglob', role_path + '/templates/mediatypes/*.yml.j2', wantlist=True) }}"
+  loop_control:
+    loop_var: loop_mediatype
+
+## Done:  trigger-actions for the media_types need to be created after
+# -> actions cannot be exported/imported, so we need to use the api
+# -> actions need to be created *after* mediatypes,
+#    but removed from a mediatype *before* the mediatype is deleted.
+
+#- name: Show media_type names
+#  debug:
+#    msg: "{{ lookup('template', loop_mediatype) | from_yaml | json_query('zabbix_export.media_types[*].name') | to_nice_yaml(indent=2) }}"
+#  loop: "{{ lookup('ansible.builtin.fileglob', role_path + '/templates/mediatypes/*.yml.j2', wantlist=True) }}"
+#  loop_control:
+#    loop_var: loop_mediatype
+
+- name: Store media_type names in a list
+  ansible.builtin.set_fact:
+    tp_zabbix_configure_media_type_names: "{{ tp_zabbix_configure_media_type_names | default([]) + lookup('template', loop_mediatype) | from_yaml | json_query('zabbix_export.media_types[*].name') | flatten | sort | unique }}"
+  loop: "{{ lookup('ansible.builtin.fileglob', role_path + '/templates/mediatypes/*.yml.j2', wantlist=True) }}"
+  loop_control:
+    loop_var: loop_mediatype
+
+- name: Create an additional dict
+  ansible.builtin.set_fact:
+    tp_zabbix_configure_media_type_dict: "{{ tp_zabbix_configure_media_type_dict | default([]) + [ {'mediatype': item, 'sendto': '#'} ] }}"
+  loop: "{{ tp_zabbix_configure_media_type_names }}"
+
+- name: Deploy trigger actions
+  community.zabbix.zabbix_action:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    name: "Production alerts to monitoring_admin via {{ loop_mediatype }}"
+    event_source: 'trigger'
+    state: present
+    status: enabled
+    esc_period: 60
+    conditions:
+      - type: 'trigger_severity'
+        operator: '>='
+        value: "{{ tp_zabbix_configure_mediatype_trigger_severity }}"
+      - type: host_group
+        operator: '='
+        value: "{{ tp_zabbix_configure_mediatype_host_group }}"
+      # mediatypes used by oncall-duty should not alert during work-hours
+      # Just name them "00_oncall_the-mediatype" and check if 'oncall' is in the loop_mediatype
+      - type: 'time_period'
+        operator: "{{ ( tp_zabbix_configure_mediatype_oncall_prefix in loop_mediatype ) | ternary('not in', 'in') }}"
+        value: "{{ tp_zabbix_configure_mediatype_timeperiod_workhours }}"
+    eval_type: and
+    operations:
+      - type: send_message
+#        subject: "{ALERT.SUBJECT}"  #* Do NOT set these!  They will be interpreted as literal text, not macros!
+#        message: "{ALERT.MESSAGE}"  #* To make things worse, this will look the exact same as the macro in the frontend.
+        media_type: "{{ loop_mediatype }}"
+        send_to_users:
+          - 'monitoring_admin'
+    recovery_operations:
+      - type: send_message
+#        subject: "{ALERT.SUBJECT}" #* See above!
+#        message: "{ALERT.MESSAGE}"
+        media_type: "{{ loop_mediatype }}"
+        send_to_users:
+          - 'monitoring_admin'
+  loop: "{{ tp_zabbix_configure_media_type_names }}"
+  loop_control:
+    loop_var: loop_mediatype
+  delegate_to: localhost
+
+# monitoring_admin needs all those mediatypes configured.
+# Todo:  use another user for notifications.  With user-privileges only.
+- name: Update automation user "{{ tp_zabbix_configure_automation_user }}"
+  community.zabbix.zabbix_user:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    alias: "{{ tp_zabbix_configure_automation_user }}"
+    passwd: "{{ tp_zabbix_configure_automation_user_password }}"
+    name: Monitoring
+    surname: Administrator
+    theme: dark-theme
+    role_name: Super admin role
+    type: Zabbix super admin
+    usrgrps:
+      - Zabbix administrators
+    user_medias: "{{ tp_zabbix_configure_media_type_dict }}"
+  delegate_to: localhost

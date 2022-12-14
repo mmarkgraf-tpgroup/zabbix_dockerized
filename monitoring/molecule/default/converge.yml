@@ -1,0 +1,214 @@
+---
+# Create an HA-setup for zabbix:
+# - HAProxied frontend
+# - Monitor everything but the zabbix-server itself through zabbix-proxy
+# - Have redundant zabbix-proxies, too.
+
+# ===== Database =====
+# This is only a standalone db for testing.
+# Use a cluster in production.
+- name: Install DB host
+  hosts: dbzabbix
+
+  pre_tasks:
+    - name: Gather facts from ALL hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      when: hostvars[item]['ansible_all_ipv4_addresses'] is not defined
+      with_items: "{{ groups['zabbix_active'] }}"
+
+  tasks:
+  - name: Install DB container
+    include_role:
+      name: tp.docker_db
+    vars:
+      tp_docker_db_service_name: dbzabbix
+      tp_docker_db_etc_hosts:
+        zabbix-server: 192.168.0.1
+        zabbix-proxy: 192.168.0.200
+        zabbix-proxy01: 192.168.0.5
+        zabbix-proxy02: 192.168.0.6
+        dbzabbix: 192.168.0.8
+
+  - name: Install DB container
+  # not using dbmonitoring here, no need for extra disks, packages and partitioning...
+    include_role:
+      name: tp.docker_db
+    vars:
+      tp_docker_db_service_name: dbzabbix
+      tp_docker_db_etc_hosts:
+        zabbix-server: 192.168.0.1
+        zabbix-proxy: 192.168.0.200
+        zabbix-proxy01: 192.168.0.5
+        zabbix-proxy02: 192.168.0.6
+        dbzabbix: 192.168.0.8
+
+
+# ===== Zabbix Server =====
+- name: Install server host
+  hosts: zabbix_server
+
+  pre_tasks:
+    - name: Gather facts from ALL hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      when: hostvars[item]['ansible_all_ipv4_addresses'] is not defined
+      with_items: "{{ groups['zabbix_active'] }}"
+
+  tasks:
+  - name: Install server container
+    include_role:
+      #name: tp.zabbix_server
+      name: monitoring_server
+    vars:
+      monitoring_server_service_name: zabbix-server
+      monitoring_server_db_host: dbzabbix
+      tp_zabbix_server_keepalived_vip_interface: eth1
+### will need to fake VIP
+      tp_zabbix_server_keepalived_vrrp_instances_custom:
+        VI_1:
+          notify: "{{ tp_zabbix_server_keepalived_notify_script | default(omit) }}"
+          notify_user: "{{ tp_zabbix_server_keepalived_script_user | default(omit) }} {{ tp_zabbix_server_keepalived_script_group | default(omit) }}"
+          virtual_router_id: "{{ tp_zabbix_server_keepalived_virtual_router_id }}"
+          virtual_ipaddresses:
+            - 192.168.0.1
+      tp_zabbix_server_db_host: 192.168.0.8
+      tp_zabbix_server_db_name: dbzabbix
+      tp_zabbix_server_db_password: dbzabbix
+      tp_zabbix_server_db_user: dbzabbix
+      tp_zabbix_server_hostinterface: eth1
+      tp_zabbix_server_container_etc_hosts:
+        zabbix-server: 192.168.0.1
+        zabbix-server01: 192.168.0.10
+        zabbix-server02: 192.168.0.11
+        zabbix-web01: 192.168.0.3
+        zabbix-web02: 192.168.0.4
+        zabbix-web: 192.168.0.100
+        zabbix-proxy01: 192.168.0.5
+        zabbix-proxy02: 192.168.0.6
+        zabbix-proxy: 192.168.0.200
+        dbzabbix: 192.168.0.8
+        haproxyzabbix: 192.168.0.2
+
+# ===== Proxy =====
+- name: Install proxy hosts
+  hosts: zabbix_proxy
+
+  pre_tasks:
+    - name: Gather facts from ALL hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      when: hostvars[item]['ansible_all_ipv4_addresses'] is not defined
+      with_items: "{{ groups['zabbix_active'] }}"
+
+
+  tasks:
+  - name: Install proxy container
+    include_role:
+      #name: tp.zabbix_proxy
+      name: monitoring_proxy
+    vars:
+      monitoring_proxy_service_name: zabbix-proxy
+      monitoring_proxy_zbx_server: zabbix-server
+      tp_zabbix_proxy_zbx_server: "{{ tp_zabbix_proxy_container_etc_hosts['zabbix-server'] }}"
+      tp_zabbix_proxy_keepalived_vip_interface: eth1
+      tp_zabbix_proxy_container_name: zabbix-proxy
+      tp_zabbix_proxy_container_etc_hosts:
+        zabbix-server: 192.168.0.1
+        zabbix-server01: 192.168.0.10
+        zabbix-server02: 192.168.0.11
+        zabbix-web01: 192.168.0.3
+        zabbix-web02: 192.168.0.4
+        zabbix-web: 192.168.0.100
+        zabbix-proxy01: 192.168.0.5
+        zabbix-proxy02: 192.168.0.6
+        zabbix-proxy: 192.168.0.200
+        dbzabbix: 192.168.0.8
+        haproxyzabbix: 192.168.0.2
+
+# ===== Frontend =====
+
+## Webservers
+- name: Install Zabbix frontend
+  hosts: zabbix_frontend
+
+  pre_tasks:
+    - name: Gather facts from ALL hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      when: hostvars[item]['ansible_all_ipv4_addresses'] is not defined
+      with_items: "{{ groups['zabbix_active'] }}"
+
+  tasks:
+  - name: Install frontend container
+    include_role:
+      #name: tp.zabbix_frontend
+      name: monitoring
+    vars:
+      monitoring_db_host: dbzabbix
+      tp_zabbix_frontend_container_etc_hosts:
+        zabbix-server: 192.168.0.1
+        zabbix-server01: 192.168.0.10
+        zabbix-server02: 192.168.0.11
+        zabbix-web01: 192.168.0.3
+        zabbix-web02: 192.168.0.4
+        zabbix-web: 192.168.0.100
+        zabbix-proxy01: 192.168.0.5
+        zabbix-proxy02: 192.168.0.6
+        zabbix-proxy: 192.168.0.200
+        dbzabbix: 192.168.0.8
+        haproxyzabbix: 192.168.0.2
+      tp_zabbix_frontend_container_env:
+        DB_SERVER_HOST:  192.168.0.8
+        POSTGRES_DB: dbzabbix
+        POSTGRES_PASSWORD: dbzabbix
+        POSTGRES_USER: dbzabbix
+        ZBX_SERVER_HOST: 192.168.0.1
+
+## HaProxy
+- name: setup HAProxy for Zabbix frontend
+  hosts: haproxyzabbix
+
+  tasks:
+    - include_role:
+        name: haproxymonitoring
+
+
+# ===== Install agents everywhere, register all the hosts =====
+# This bit should go into the common role, me thinks.
+- name: Install agents and register hosts
+  hosts: zabbix
+
+  pre_tasks:
+    - name: Gather facts from ALL hosts (regardless of limit or tags)
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      when: hostvars[item]['ansible_all_ipv4_addresses'] is not defined
+      with_items: "{{ groups['zabbix_active'] }}"
+
+  tasks:
+  - name: Install zabbix agent
+    include_role:
+      name: monitoring_agent
+    vars:
+      tp_zabbix_agent_service_uid: 5005
+      tp_zabbix_agent_mode: active
+      tp_zabbix_agent_container_name: zabbix-agent
+      tp_zabbix_agent_interface: eth1
+#      tp_zabbix_agent_active_servers:
+#        - zabbix-server01
+#        - zabbix-server02
+#        - 192.168.0.10
+#        - 192.168.0.11
+#        - zabbix-proxy
+#        - zabbix-proxy01
+#        - zabbix-proxy02
+#        - 172.17.0.1
+#        - 192.168.0.5
+#        - 192.168.0.6
+#

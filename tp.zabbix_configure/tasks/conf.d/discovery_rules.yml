@@ -1,0 +1,49 @@
+---
+# https://docs.ansible.com/ansible/2.10/collections/community/zabbix/zabbix_discovery_rule_module.html#examples
+
+- name: Fetch existing Discovery Rules
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: 'application/json-rpc'
+    body:
+      jsonrpc: '2.0'
+      method: drule.get
+      auth: "{{ login.json.result }}"
+      params:
+        output: extend
+        selectOperations: extend
+        selectDChecks: extend
+      id: 4
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost
+  register: existing_discovery_rules
+  tags:
+    - never
+    - debug
+
+- name: Show existing discovery rules
+  ansible.builtin.debug:
+    msg: "{{ existing_discovery_rules | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Create discovery rule with ICMP and zabbix agent checks
+  community.zabbix.zabbix_discovery_rule:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: "{{ tp_zabbix_configure_automation_user }}"
+    login_password: "{{ tp_zabbix_configure_automation_user_password }}"
+    name: Local network
+    state: present
+    iprange: 192.168.0.1-254
+    delay: 3m
+    dchecks:
+      - type: Zabbix
+        key: 'system.hostname'
+        ports: 10050
+        uniq: yes
+        host_source: "discovery"
+  delegate_to: localhost

@@ -1,0 +1,19 @@
+---
+# handlers file for roles/tp.zabbix_item_factory
+- name: Logout of Zabbix
+  # This avoids unneeded open sessions.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_item_factory_automation_url }}/api_jsonrpc.php"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: user.logout
+      auth: "{{ tp_zabbix_item_factory_api_login.json.result }}"
+      params: []
+      id: 10
+    timeout: "{{ tp_zabbix_item_factory_api_timeout }}"
+  delegate_to: localhost
+  check_mode: False

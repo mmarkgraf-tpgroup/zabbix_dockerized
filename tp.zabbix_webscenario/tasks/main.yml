@@ -1,0 +1,48 @@
+---
+- name: Wait for frontend at {{ tp_zabbix_webscenario_server_url }} to come up
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_webscenario_server_url }}"
+    status_code: 200
+    timeout: "{{ tp_zabbix_webscenario_api_timeout }}"
+  delegate_to: localhost
+  register: monitoring_frontend_available
+  until: monitoring_frontend_available.status == 200
+  retries: 3
+  delay: 2
+  failed_when: False
+  run_once: True
+  check_mode: no
+  tags:
+    - inventory_sync
+
+- name: Ensure webscenario is set for host
+  zabbix_host_webscenario:
+    host_name: "{{ tp_zabbix_webscenario_host_name }}"
+    name: "{{ tp_zabbix_webscenario_name }}"
+    agent: "{{ tp_zabbix_webscenario_agent }}"
+    #application_name: "{{ tp_zabbix_webscenario_application_name }}"
+    authentication: "{{ tp_zabbix_webscenario_authentication }}"
+    delay: "{{ tp_zabbix_webscenario_delay }}"
+    http_password: "{{ tp_zabbix_webscenario_http_password }}"
+    http_proxy: "{{ tp_zabbix_webscenario_http_proxy }}"
+    http_user: "{{ tp_zabbix_webscenario_http_user }}"
+    retries: "{{ tp_zabbix_webscenario_retries }}"
+    ssl_cert_file: "{{ tp_zabbix_webscenario_ssl_cert_file }}"
+    ssl_key_file: "{{ tp_zabbix_webscenario_ssl_key_file }}"
+    ssl_key_password: "{{ tp_zabbix_webscenario_ssl_key_password }}"
+    status: "{{ (tp_zabbix_webscenario_status == 'enabled') | int }}"
+    state: "{{ tp_zabbix_webscenario_state }}"
+    verify_host: "{{ tp_zabbix_webscenario_verify_host | int }}"
+    verify_peer: "{{ tp_zabbix_webscenario_verify_peer | int }}"
+    steps: "{{ tp_zabbix_webscenario_steps }}"
+    force: "{{ tp_zabbix_webscenario_force }}"
+    server_url: "{{ tp_zabbix_webscenario_server_url }}"
+    login_user: "{{ tp_zabbix_webscenario_login_user }}"
+    login_password: "{{ tp_zabbix_webscenario_login_password }}"
+  delegate_to: localhost
+  changed_when: False
+  when:
+    - monitoring_frontend_available.status is defined  # contrary to the docs, uri does NOT always return a status.
+    - monitoring_frontend_available.status == 200
+  tags:
+    - inventory_sync

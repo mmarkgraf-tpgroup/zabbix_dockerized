@@ -1,0 +1,11 @@
+---
+- name: restart zabbix-agent
+  service:
+    name: "{{ tp_zabbix_check_agent_service_name }}"
+    state: restarted
+  become: True
+
+- name: restart zabbix-agent-win
+  win_service:
+    name: Zabbix Agent
+    state: restarted

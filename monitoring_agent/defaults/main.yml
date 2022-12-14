@@ -1,0 +1,24 @@
+---
+monitoring_agent_host_name: "{{ ansible_fqdn }}"
+monitoring_agent_zbx_server: "monitoring-proxy.{{ ansible_domain }}"
+monitoring_agent_proxy: "{{ monitoring_agent_zbx_server }}"
+monitoring_agent_target_group: "{{ groups['monitoring_proxy'] | default([]) }}"
+# Using set_fact in tasks/main to fill the list.
+monitoring_agent_active_servers: []
+monitoring_agent_additional_servers:
+  - 172.16.0.0/12
+monitoring_agent_installation_style: package
+monitoring_agent_register_host_state: "{{ monitoring_agent_purge | ternary('absent', 'present') }}"
+monitoring_agent_mode: active
+monitoring_agent_purge: False
+monitoring_agent_interfaces:
+  - type: agent
+    main: 1
+    ip: "{{ monitoring_agent_ip_address }}"
+    dns: "{{ ansible_fqdn }}"
+    useip: 1
+
+monitoring_agent_container_image_version: alpine-5.2-latest
+monitoring_agent_register_templates_custom: []
+
+monitoring_agent_os_dependent_vars_file: "{{ (ansible_os_family == 'Windows') | ternary(ansible_os_family, ansible_distribution) }}.yml"

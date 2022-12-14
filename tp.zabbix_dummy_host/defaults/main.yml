@@ -1,0 +1,28 @@
+---
+# defaults file for roles/tp_zabbix_dummy_host
+tp_zabbix_dummy_host_service_name: tp_zabbix_dummy_host
+tp_zabbix_dummy_host_suffix: cluster
+tp_zabbix_dummy_host_name: "{{ tp_zabbix_dummy_host_service_name }}.{{ ansible_domain }}_{{ tp_zabbix_dummy_host_suffix }}"
+tp_zabbix_dummy_host_description: Dummy host for checks over (multiple) hostgroups and/or services
+
+# * Do NOT use the blanks service_name to create groups:
+# The dummy_host will be used to aggregate checks over hostgroups.
+# It *should not* be in the groups it aggregates over, to avoid confusion.
+tp_zabbix_dummy_host_groups:
+  - "{{ tp_zabbix_dummy_host_service_name }}_{{ tp_zabbix_dummy_host_suffix }}"
+
+# Need to overwrite defaults, as dummy-host has no OS
+tp_zabbix_dummy_host_groups_default:
+  - "{{ ansible_domain }}"
+
+# Need a dummy interface for the host.
+# This will never be used, but without it, we can't register things with the host :-/
+tp_zabbix_dummy_host_interface:
+  - ip: 127.0.0.1
+    main: 1
+    type: agent
+    useip: 1
+
+tp_zabbix_dummy_host_templates: []
+
+tp_zabbix_dummy_host_overwrite_templates: True

@@ -1,0 +1,23 @@
+galaxy_info:
+  author: Marco Markgraf
+  description: install monitoring agent and register host with monitoring server
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms:
+    - name: Debian
+      versions:
+        - wheezy
+        - stretch
+        - buster
+    - name: Windows
+      versions:
+        - any
+
+  galaxy_tags:
+    - monitoring
+    - zabbix
+
+dependencies: []

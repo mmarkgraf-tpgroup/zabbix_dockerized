@@ -1,0 +1,41 @@
+---
+# tasks file for dbmonitoring_partitioning
+
+- name: Install needed packages
+  package:
+    name: "{{ dbmonitoring_needed_packages }}"
+    state: present
+  become: True
+
+- name: Include database setup
+  include_tasks:
+    file: create_db.yml
+    apply:
+      tags:
+        - create_monitoring_db
+  when:
+    - dbmonitoring_service_state == 'PRIMARY'
+  tags:
+    - create_monitoring_db
+
+- name: Include partitioning tasks
+  include_tasks: install_partitioning.yml
+  when:
+    - not dbmonitoring_partitioning_purge | bool
+    - dbmonitoring_partitioning_install | bool
+    - dbmonitoring_service_state == 'PRIMARY'
+  tags:
+    - partitioning
+
+- name: Include cleanup tasks
+  include_tasks: daily_cleanup.yml
+  when:
+    - not dbmonitoring_partitioning_purge | bool
+    - dbmonitoring_partitioning_install | bool
+    - dbmonitoring_service_state == 'PRIMARY'
+  tags:
+    - partitioning
+
+- name: Uninstall partitioning
+  include_tasks: uninstall_partitioning.yml
+  when: dbmonitoring_partitioning_purge | bool

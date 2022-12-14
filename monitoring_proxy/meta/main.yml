@@ -1,0 +1,28 @@
+galaxy_info:
+  author: Marco Markgraf
+  description: setup zabbix proxy with docker
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms:
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+
+  galaxy_tags:
+    - monitoring
+    - zabbix
+
+dependencies:
+  - role: tp.zabbix_proxy
+    tp_zabbix_proxy_service_name: "{{ monitoring_proxy_service_name }}"
+    tp_zabbix_proxy_zbx_server: "{{ monitoring_proxy_zbx_server }}"
+    tp_zabbix_proxy_container_image: "{{ monitoring_proxy_container_image }}"
+    tp_zabbix_proxy_javagateway_container_image: "{{ monitoring_proxy_javagateway_container_image }}"
+    tp_zabbix_proxy_snmptraps_container_image: "{{ monitoring_proxy_snmptraps_container_image }}"
+    tp_zabbix_proxy_version: "{{ monitoring_proxy_container_image_version }}"
+    tp_zabbix_proxy_snmptraps_enabled: "{{ monitoring_proxy_snmptraps_enabled }}"
+    tp_zabbix_proxy_javagateway_enabled: "{{ monitoring_proxy_javagateway_enabled }}"

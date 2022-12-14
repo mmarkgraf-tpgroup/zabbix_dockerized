@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }} by {{ ansible_role_name }}
+#===============================================================================
+#
+#          FILE: keepalived.notify.zabbix.sh
+#
+#         USAGE: ./keepalived.notify.zabbix.sh <type> <name> <state> <priority>
+#
+#   DESCRIPTION: a notification-script for keepalived/zabbix
+#
+#           REF: https://tobru.ch/keepalived-check-and-notify-scripts/
+#
+#
+#        AUTHOR: Marco Markgraf (mma), marco.markgraf@transporeon.com
+#  ORGANIZATION: transporeon.com
+#       CREATED: 2021-04-14 13:44
+#       license: BSD-3-CLAUSE
+#      REVISION:  ---
+#===============================================================================
+
+#=== Init ======================================================================
+set -o nounset   # exit on unset variables.
+set -o errexit   # exit on any error.
+set -o errtrace  # any trap on ERR is inherited
+#set -o xtrace    # show expanded command before execution.
+
+unalias -a       # avoid rm being aliased to rm -rf and similar issues
+LANG=C           # avoid locale issues
+
+statusfile='/srv/{{ tp_zabbix_server_service_name }}/keepalived.status'
+#=== Functions =================================================================
+_log () {
+  local facility="$1"
+  local level="$2"
+  local message="${*:3}"
+  local valid_facilities
+  valid_facilities='auth|authpriv|cron|daemon|ftp|kern|'
+  valid_facilities+='local0|local1|local2|local3|local4|local5|local6|local7|'
+  valid_facilities+='lpr|mail|news|security|syslog|user|uucp'
+  local valid_levels='alert|crit|debug|emerg|err|info|notice|warning'
+
+  if [[ "$facility" =~ ^($valid_facilities)$ ]] && \
+    [[ "$level" =~ ^($valid_levels)$ ]]
+  then
+    logger -i --rfc3164 --priority "${facility}.${level}" -- "$message"
+  else
+    logger --stderr -i --rfc3164 --priority syslog.err -- \
+      "[$0] Invalid facility or level! Message was: $*"
+  fi
+} # ----------  end of function _log  ----------
+
+#=== Main ======================================================================
+
+_log syslog debug "[$0] got args: $*"
+
+if [[ $# -ge 3 ]]; then
+  TYPE=$1  # "GROUP" or "INSTANCE"
+  NAME=$2  # name of group or instance
+  STATE=$3 # target state of transition ("MASTER", "BACKUP", "FAULT")'
+  PRIO=$4  # an integer specifying the priority.
+  case ${STATE^^} in
+    "MASTER")
+      _log syslog info "$TYPE $NAME transitioned to state $STATE with priority $PRIO"
+      if [ $(/usr/bin/docker container inspect -f {{ '{{'}}.State.Status{{'}}' }} {{ tp_zabbix_server_container_name }}) != 'running' ]; then
+        /usr/bin/docker start {{ tp_zabbix_server_container_name }}
+      fi
+      exit 0
+      ;;
+    "BACKUP")
+      _log syslog info "$TYPE $NAME transitioned to state $STATE with priority $PRIO"
+      if [ $(/usr/bin/docker container inspect -f {{ '{{'}}.State.Status{{'}}' }} {{ tp_zabbix_server_container_name }}) == 'running' ] && [[ ${HOSTNAME: -2} != 01 ]]; then
+        /usr/bin/docker stop --time 3 {{ tp_zabbix_server_container_name }}
+      fi
+      exit 0
+      ;;
+    "STOP")
+      _log syslog info "$TYPE $NAME transitioned to state $STATE with priority $PRIO"
+      if [ $(/usr/bin/docker container inspect -f {{ '{{'}}.State.Status{{'}}' }} {{ tp_zabbix_server_container_name }}) == 'running' ] ; then
+        /usr/bin/docker stop --time 3 {{ tp_zabbix_server_container_name }}
+      fi
+      exit 0
+      ;;
+     "FAULT")
+      _log syslog crit "$TYPE $NAME transitioned to FAULT STATE with priority ${PRIO:-UNKNOWN}"
+      /usr/bin/docker stop --time 3 {{ tp_zabbix_server_container_name }}
+      exit 0
+      ;;
+    *) _log syslog err "[$0] got unknown state '$STATE'."
+      exit 1
+      ;;
+  esac
+else
+  _log syslog crit "[$0] expects >=3 args but got $#"
+  exit 1
+fi
+#=== End =======================================================================

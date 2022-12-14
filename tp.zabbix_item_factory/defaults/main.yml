@@ -1,0 +1,41 @@
+---
+# defaults file for roles/tp.zabbix_item_factory
+tp_zabbix_item_factory_service_name: tp_zabbix_item_factory
+tp_zabbix_item_factory_host_name: "{{ tp_zabbix_item_factory_service_name }}.{{ ansible_domain }}"
+
+tp_zabbix_item_factory_items: []
+tp_zabbix_item_factory_triggers: []
+
+# tp_zabbix_item_factory_items:
+#   - name: some check
+#     key_: grpavg[monitoring,"system.cpu.load[all,avg1]",last]  # mind the quotes *inside* the list
+#     delay: Update interval of the item. Accepts seconds or a time unit with suffix (30s,1m,2h,1d).
+#     value_type: 0(numeric float) 1(character) 2(log) 3(numeric unsigned) 4(text)
+#     # Optional
+#     description: I suggest putting a documentation URL here :-)
+#     history: defaults to 90d
+#     trends: defaults to 365d
+
+tp_zabbix_item_factory_item_defaults:
+  type: 8  # 8 is an aggregated check.  Not available with Zabbix 5.4 m(
+  history: 7d
+  trends: 365d
+  delay: 1m
+  description: This aggregated check needs a better description.
+  hostid: "{{ tp_zabbix_item_factory_dummy_host_info.hosts[0].hostid }}"
+  interfaceid: "{{ tp_zabbix_item_factory_dummy_host_info.hosts[0].hostinterfaces[0].interfaceid | string }}"
+
+tp_zabbix_item_factory_trigger_defaults:
+  manual_close: 1  # allow manual closing
+  description: This trigger needs a better description.
+  priority: AVERAGE
+
+tp_zabbix_item_factory_templates: []
+
+tp_zabbix_item_factory_automation_url: "{{ monitoring_automation_url }}"
+tp_zabbix_item_factory_automation_user: "{{ monitoring_automation_user }}"
+tp_zabbix_item_factory_automation_user_password: "{{ monitoring_automation_user_password }}"
+
+tp_zabbix_item_factory_items_delete: False
+
+tp_zabbix_item_factory_api_timeout: "{{ monitoring_api_timeout }}"

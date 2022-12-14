@@ -1,0 +1,16 @@
+---
+- name: Database for Zabbix
+  hosts: zabbix_db
+  tasks:
+    - name: "Include tp.docker_db"
+      include_role:
+        name: "tp.docker_db"
+      vars:
+        tp_docker_db_service_name: dbzabbix
+
+- name: Zabbix server
+  hosts: zabbix_server
+  tasks:
+    - name: "Include tp.zabbix_server"
+      include_role:
+        name: "tp.zabbix_server"

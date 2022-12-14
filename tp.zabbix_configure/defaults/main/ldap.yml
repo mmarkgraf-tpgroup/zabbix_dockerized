@@ -1,0 +1,14 @@
+---
+tp_zabbix_configure_ldap_host: ''
+tp_zabbix_configure_ldap_port: 389
+tp_zabbix_configure_ldap_protocol: ldap
+tp_zabbix_configure_ldap_url: "{{ tp_zabbix_configure_ldap_protocol }}://{{ tp_zabbix_configure_ldap_host }}:{{ tp_zabbix_configure_ldap_port }}"
+tp_zabbix_configure_ldap_base_dn: ''
+tp_zabbix_configure_ldap_bind_dn: ''
+tp_zabbix_configure_ldap_bind_password: ''
+tp_zabbix_configure_ldap_filter: ''
+tp_zabbix_configure_ldap_attributes: []
+tp_zabbix_configure_ldap_validate_certs: no
+
+tp_zabbix_configure_ldap_default_user_role: User role
+tp_zabbix_configure_ldap_default_permission: read-only

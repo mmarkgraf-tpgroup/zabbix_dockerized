@@ -1,0 +1,29 @@
+---
+- name: template out the install-script
+  template:
+    src: install_partitioning.sh.j2
+    dest: /usr/local/bin/install_partitioning.sh
+    owner: "{{ dbmonitoring_partitioning_db_superuser }}"
+    group: "{{ dbmonitoring_partitioning_db_superuser }}"
+    mode: 0750
+  become: True
+  when:
+    - dbmonitoring_service_state == 'PRIMARY'
+
+- name: Create log-dir
+  file:
+    path: /var/log/dbpartitioning
+    state: directory
+    owner: "{{ dbmonitoring_partitioning_db_superuser }}"
+    group: "{{ dbmonitoring_partitioning_db_superuser }}"
+    mode: 0750
+  become: True
+  when:
+    - dbmonitoring_service_state == 'PRIMARY'
+
+- name: Partition database {{ dbmonitoring_partitioning_dbname }}
+  shell: /usr/local/bin/install_partitioning.sh
+  become: True
+  become_user: "{{ dbmonitoring_partitioning_db_superuser }}"
+  when:
+    - dbmonitoring_service_state == 'PRIMARY'

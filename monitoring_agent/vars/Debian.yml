@@ -1,0 +1,17 @@
+---
+monitoring_agent_ip_address: "{{ ansible_default_ipv4.address }}"
+
+monitoring_agent_register_templates:
+  - Linux by Zabbix agent active
+
+# We have repos for stretch and buster
+monitoring_agent_use_repo: "{{ ansible_distribution == 'Debian' and ansible_distribution_major_version is version('9', '>=') | ternary('yes', 'no') }}"
+monitoring_agent_repo: "deb http://zabbixrepo.some.where/zabbix/5.2/debian {{ ansible_distribution_release }} main"
+monitoring_agent_repo_key_url: http://zabbixrepo.some.where/zabbix-official-repo.key
+monitoring_agent_repo_key_id: A1848F5352D022B9471D83D0082AB56BA14FE591
+
+# zabbix-agent2 for stretch and newer, zabbix-agent for everything else
+monitoring_agent_package: "{{
+  ( ansible_distribution == 'Debian' and ansible_distribution_major_version is version('9', '>=') )
+  | ternary('zabbix-agent2', 'zabbix-agent')
+  }}"

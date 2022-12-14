@@ -1,0 +1,44 @@
+---
+# defaults file for roles/tp.zabbix_vmware
+# Todo: allow the module to process a list of vmware_url
+# -> additonal macros
+
+tp_zabbix_vmware_url:
+tp_zabbix_vmware_ip: "{{ lookup('community.general.dig', tp_zabbix_vmware_url|urlsplit('hostname') )}}"
+tp_zabbix_vmware_username: zabbix
+tp_zabbix_vmware_password: Sup3rS3cr3t
+tp_zabbix_vmware_monitoring_login_user: "{{ monitoring_automation_user }}"
+tp_zabbix_vmware_monitoring_login_password: "{{ monitoring_automation_user_password }}"
+tp_zabbix_vmware_monitoring_server_url: "{{ monitoring_automation_url }}"
+tp_zabbix_vmware_monitoring_api_timeout: "{{ monitoring_api_timeout }}"
+
+tp_zabbix_vmware_service_name: "{{ tp_zabbix_vmware_url | urlsplit('hostname') }}"
+tp_zabbix_vmware_host_suffix: monitor
+tp_zabbix_vmware_host_description: A VMWare host system
+tp_zabbix_vmware_host_name:  "{{ tp_zabbix_vmware_service_name }}_{{ tp_zabbix_vmware_host_suffix }}"
+tp_zabbix_vmware_check_template: "{{ lookup('file', 'template_app_vmware.xml') }}"
+tp_zabbix_vmware_host_groups_defaults:
+  - VMware
+tp_zabbix_vmware_host_groups: []
+tp_zabbix_vmware_host_link_templates:
+  - VMware
+
+tp_zabbix_vmware_monitoring_external_check_user: root
+tp_zabbix_vmware_monitoring_external_check_pass: Sup3rS3cr3t
+
+tp_zabbix_vmware_monitoring_macros:
+  - macro: '{$VMWARE.URL}'
+    type: text
+    # need to use the IP-address here.  Probably the redirects aren't followed?
+    value: "https://{{ tp_zabbix_vmware_ip }}/sdk"
+  - macro: '{$VMWARE.USERNAME}'
+    type: text
+    value: "{{ tp_zabbix_vmware_username }}"
+  - macro: '{$VMWARE.PASSWORD}'
+    type: secret
+    value: "{{ tp_zabbix_vmware_password }}"
+
+tp_zabbix_vmware_monitoring_macros_global:
+  - macro: '{$HV.ROOTPASSWORD}'
+    type: secret
+    value: "{{ tp_zabbix_vmware_monitoring_external_check_pass }}"

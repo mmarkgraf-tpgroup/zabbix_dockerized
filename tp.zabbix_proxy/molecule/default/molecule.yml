@@ -1,0 +1,44 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+platforms:
+- name: zabbix-proxy
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.5
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/proxy1zabbix.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/proxy1zabbix.vdi']"
+  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+  groups:
+    - zabbix
+    - zabbix_proxy
+    - zabbix_active
+  provision: True
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+  flake8 .
+provisioner:
+  name: ansible
+  inventory:
+    links:
+      group_vars: ../../../../environments/molecule/group_vars/
+      hosts: ../../../../environments/molecule/hosts.yml
+  config_options:
+    defaults:
+      vault_identity_list: ../../test/fixtures/vault_password_file
+      inventory_ignore_extensions: ~, .orig, .bak, .ini, .cfg, .retry, .pyc, .pyo, .cache
+    ssh_connection:
+      pipelining: True
+      control_path: /tmp/ansible-ssh-%%h-%%p-%%r
+verifier:
+  name: ansible

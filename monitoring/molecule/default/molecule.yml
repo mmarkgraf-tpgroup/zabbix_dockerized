@@ -1,0 +1,184 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+platforms:
+- name: dbzabbix
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.8
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbixdb_sdb.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbixdb_sdb.vdi']"
+  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+  groups:
+    - zabbix
+    - zabbix_db
+  provision: True
+- name: zabbix-server01
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.10
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix01.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix01.vdi']"
+  groups:
+    - zabbix
+    - zabbix_server
+    - zabbix_active
+    - monitoring_server
+  provision: True
+- name: zabbix-server02
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.11
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix02.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix02.vdi']"
+  groups:
+    - zabbix
+    - zabbix_server
+    - zabbix_active
+    - monitoring_server
+  provision: True
+# ha_proxy for the frontend
+- name: haproxyzabbix
+  box: debian/buster64
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.2
+  memory: 2048
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/webzabbix.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/webzabbix.vdi']"
+  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+  instance_raw_config_args:
+  - "vm.network 'forwarded_port', guest: 7080, host: 7080"
+  - "vm.network 'forwarded_port', guest: 80, host: 8080"
+  - "vm.network 'forwarded_port', guest: 443, host: 8443"
+  groups:
+    - zabbix
+  provision: True
+- name: zabbix-web01
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.3
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/web1zabbix.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/web1zabbix.vdi']"
+  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+  instance_raw_config_args:
+  - "vm.network 'forwarded_port', guest: 8080, host: 8001"
+  groups:
+    - zabbix
+    - zabbix_web
+    - zabbix_frontend
+    - zabbix_configure
+  provision: True
+- name: zabbix-web02
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.4
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/web2zabbix.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/web2zabbix.vdi']"
+  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+  instance_raw_config_args:
+  - "vm.network 'forwarded_port', guest: 8080, host: 8002"
+  groups:
+    - zabbix
+    - zabbix_web
+    - zabbix_frontend
+    #- zabbix_configure
+  provision: True
+- name: zabbix-proxy01
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.5
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/proxy1zabbix.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/proxy1zabbix.vdi']"
+  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+  groups:
+    - zabbix
+    - zabbix_proxy
+    - zabbix_active
+    - monitoring_proxy
+  provision: True
+- name: zabbix-proxy02
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabbixnet
+    network_name: private_network
+    ip: 192.168.0.6
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/proxy2zabbix.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/proxy2zabbix.vdi']"
+  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+  groups:
+    - zabbix
+    - zabbix_proxy
+    - zabbix_active
+    - monitoring_proxy
+  provision: True
+#- name: monitorme
+#  box: debian/buster64
+#  memory: 2048
+#  interfaces:
+#  - virtualbox__intnet: zabbixnet
+#    network_name: private_network
+#    ip: 192.168.0.7
+#  provider_raw_config_args:
+#  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/monitormezabbix.vdi', '--size', 42 * 1024]"
+#  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/monitormezabbix.vdi']"
+#  - "customize ['modifyvm', :id, '--natnet1', '192.168.252.0/24']"
+#  provision: True
+#  groups:
+#    - zabbix
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+  flake8 .
+provisioner:
+  name: ansible
+  env:
+    # yes, both, depending on wether you're running ansible <=2.9 or >=2.10
+    ANSIBLE_COLLECTIONS_PATH: ../../collections/
+    ANSIBLE_COLLECTIONS_PATHS: ../../collections/
+  inventory:
+    links:
+      group_vars: ../../../../environments/molecule/group_vars/
+      hosts: ../../../../environments/molecule/hosts.yml
+  config_options:
+    defaults:
+      vault_identity_list: ../../test/fixtures/vault_password_file
+      inventory_ignore_extensions: ~, .orig, .bak, .ini, .cfg, .retry, .pyc, .pyo, .cache
+    ssh_connection:
+      pipelining: True
+      control_path: /tmp/ansible-ssh-%%h-%%p-%%r
+verifier:
+  name: ansible

@@ -1,0 +1,17 @@
+---
+- name: Create zabbix javagateway container
+  community.docker.docker_container:
+    name: "{{ tp_zabbix_proxy_javagateway_container_name }}"
+    image: "{{ tp_zabbix_proxy_javagateway_container_image }}:{{ tp_zabbix_proxy_javagateway_container_image_version }}"
+    env: "{{ tp_zabbix_proxy_javagateway_container_env }}"
+    ports: "{{ ( tp_zabbix_proxy_container_network_mode == 'host' ) | ternary(omit, tp_zabbix_proxy_javagateway_container_ports) }}"
+    volumes: "{{ tp_zabbix_proxy_javagateway_container_volumes | default(omit) }}"
+    restart_policy: "{{ tp_zabbix_proxy_javagateway_container_restart_policy }}"
+    etc_hosts: "{{ tp_zabbix_proxy_javagateway_container_etc_hosts | default(omit) }}"
+    networks: "{{ tp_zabbix_proxy_container_networks | default(omit) }}"
+    network_mode: "{{ tp_zabbix_proxy_container_network_mode }}"
+    links:
+      - "{{ tp_zabbix_proxy_container_name }}:zabbix-proxy"
+      - "{{ tp_zabbix_proxy_container_name }}:{{ tp_zabbix_proxy_container_name }}"
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"

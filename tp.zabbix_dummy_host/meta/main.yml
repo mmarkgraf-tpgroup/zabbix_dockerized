@@ -1,0 +1,27 @@
+galaxy_info:
+  author: marco.markgraf@transporeon.com
+  description: Dummy host for checks over (multiple) hostgroups and/or services
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms: []
+
+  galaxy_tags:
+    - monitoring
+    - zabbix_check
+allow_duplicates: True
+dependencies:
+  - role: tp.zabbix_host
+    tp_zabbix_host_host_name: "{{ tp_zabbix_dummy_host_name }}"
+    tp_zabbix_host_description: "{{ tp_zabbix_dummy_host_description }}"
+    tp_zabbix_host_host_groups: "{{ tp_zabbix_dummy_host_groups }}"
+    tp_zabbix_host_interfaces: "{{ tp_zabbix_dummy_host_interface }}"
+    # Need to overwrite defaults, as dummy-host has no OS and such...
+    tp_zabbix_host_host_groups_defaults: "{{ tp_zabbix_dummy_host_groups_default }}"
+    tp_zabbix_host_link_templates: "{{ tp_zabbix_dummy_host_templates }}"
+    tp_zabbix_host_overwrite_templates: "{{ tp_zabbix_dummy_host_overwrite_templates }}"
+    # Deliberately empty for aggregate-checks dummy-host!  DO NOT use a proxy!
+    tp_zabbix_host_proxy:
+    run_once: True

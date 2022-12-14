@@ -1,0 +1,74 @@
+---
+# tasks file for roles/tp.zabbix_vmware
+# * This role needs to be included by tp.zabbix_proxy
+- name: Wait for frontend at {{ tp_zabbix_vmware_monitoring_server_url }} to come up
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_vmware_monitoring_server_url }}"
+    status_code: 200
+    timeout: "{{ tp_zabbix_vmware_monitoring_api_timeout }}"
+  delegate_to: localhost
+  register: monitoring_frontend_available
+  until: monitoring_frontend_available.status == 200
+  retries: 3
+  delay: 1
+  failed_when: False
+  run_once: True
+  check_mode: no
+
+- name: Create new host macro or update an existing macro's value
+  community.zabbix.zabbix_hostmacro:
+    server_url: "{{ tp_zabbix_vmware_monitoring_server_url }}"
+    login_user: "{{ tp_zabbix_vmware_monitoring_login_user }}"
+    login_password: "{{ tp_zabbix_vmware_monitoring_login_password }}"
+    host_name: "{{ tp_zabbix_vmware_host_name }}"
+    macro_name: "{{ tp_zabbix_vmware_monitoring_macro.macro }}"
+    macro_value: "{{ tp_zabbix_vmware_monitoring_macro.value }}"
+    macro_type: "{{ tp_zabbix_vmware_monitoring_macro.type }}"
+    state: "{{ tp_zabbix_vmware_monitoring_macro.state | default('present') }}"
+  no_log: True
+  run_once: True
+  delegate_to: localhost
+  loop: "{{ tp_zabbix_vmware_monitoring_macros }}"
+  loop_control:
+    loop_var: tp_zabbix_vmware_monitoring_macro
+  when: monitoring_frontend_available.status == 200
+
+# * This will not really help, we need python and pywbem *in* the docker-container.
+# * But it is useful for testing
+- name: Ensure needed pip packages are installed
+  ansible.builtin.include_role:
+    name: tp.pip
+  vars:
+    tp_pip_install_packages:
+      - name: pywbem
+        version: 1.4.1
+
+# added the needed json-output to the check-script, see https://github.com/Napsty/check_esxi_hardware/pull/65
+# ./check_esxi_hardware.py -H server.some.where -U root -P file:/path/to/EsxRootPasswd --outputformat=json --pretty -p
+- name: Copy check_esxi_hardware.py to the monitoring-proxies
+  ansible.builtin.copy:
+    src: ../files/check_esxi_hardware.py
+    dest: "/srv/{{ tp_zabbix_proxy_service_name }}/externalscripts/"
+    owner: "{{ tp_zabbix_proxy_service_user }}"
+    group: "{{ tp_zabbix_proxy_service_group }}"
+    mode: 0755  # Yes, executable by anyone, the containers zabbix-user has different uid/gid.
+  become: True
+
+- name: Create a global macro for the esxi-root-password
+  community.zabbix.zabbix_globalmacro:
+    server_url: "{{ tp_zabbix_vmware_monitoring_server_url }}"
+    login_user: "{{ tp_zabbix_vmware_monitoring_login_user }}"
+    login_password: "{{ tp_zabbix_vmware_monitoring_login_password }}"
+    macro_name: "{{ tp_zabbix_vmware_monitoring_macro.macro }}"
+    macro_value: "{{ tp_zabbix_vmware_monitoring_macro.value }}"
+    macro_type: "{{ tp_zabbix_vmware_monitoring_macro.type }}"
+    state: "{{ tp_zabbix_vmware_monitoring_macro.state | default('present') }}"
+  no_log: True
+  run_once: True
+  delegate_to: localhost
+  loop: "{{ tp_zabbix_vmware_monitoring_macros_global }}"
+  loop_control:
+    loop_var: tp_zabbix_vmware_monitoring_macro
+  when:
+    - monitoring_frontend_available.status is defined  # contrary to the docs, uri does NOT always return a status.
+    - monitoring_frontend_available.status == 200

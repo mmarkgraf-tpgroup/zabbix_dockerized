@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: Dennis Lerch
+  description: setup zabbix host
+  company: https://transporeon.com/
+  license: BSD-3-CLAUSE
+
+  min_ansible_version: '2.9'
+
+  platforms: []
+
+  galaxy_tags:
+    - monitoring
+    - zabbix
+    - zabbix_host
+
+allow_duplicates: Yes
+
+dependencies: []

@@ -1,0 +1,132 @@
+---
+- name: Include sanity-checks
+  ansible.builtin.include_tasks: assert.yml
+  tags:
+    - never
+    - debug
+
+- name: Display image version.
+  ansible.builtin.debug:
+    msg: "{{ tp_zabbix_proxy_container_image }}:{{ tp_zabbix_proxy_container_image_version }}"
+  tags:
+    - never
+    - debug
+
+- name: Display container environment
+  ansible.builtin.debug:
+    msg: "{{ tp_zabbix_proxy_container_env | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Create directories to be mounted into the container
+  ansible.builtin.file:
+    path: "{{ loop_proxy_container_extra_volume }}"
+    state: directory
+  become: True
+  loop: "{{ tp_zabbix_proxy_container_extra_volumes }}"
+  loop_control:
+    loop_var: loop_proxy_container_extra_volume
+  tags:
+    - always
+
+# * Include roles filling those directories here
+# * e.g. tp.zabbix_vmware, which creates /usr/lib/externalscripts/check_esxi_hardware.py
+
+#- name: Include VMware Monitoring
+#  ansible.builtin.include_role:
+#    name: tp.zabbix_vmware
+#  vars:
+#    tp_zabbix_vmware_url:
+#    tp_zabbix_host_proxy:
+#    tp_zabbix_vmware_host_groups:
+#      - production
+
+# * Continue with the proxy-setup
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: "{{ item.name }}"
+  loop: "{{ tp_zabbix_proxy_container_networks }}"
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"
+
+- name: Pull latest zabbix-proxy image
+  community.general.docker_image:
+    name: "{{ tp_zabbix_proxy_container_image }}:{{ tp_zabbix_proxy_container_image_version }}"
+    source: pull
+    force_source: True
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"
+
+- name: Pull latest zabbix-javagateway image
+  community.general.docker_image:
+    name: "{{ tp_zabbix_proxy_javagateway_container_image }}:{{ tp_zabbix_proxy_javagateway_container_image_version }}"
+    source: pull
+    force_source: True
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"
+  when: tp_zabbix_proxy_javagateway_enabled
+
+- name: Pull latest zabbix-snmptraps image
+  community.general.docker_image:
+    name: "{{ tp_zabbix_proxy_snmptraps_container_image }}:{{ tp_zabbix_proxy_snmptraps_container_image_version }}"
+    source: pull
+    force_source: True
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"
+  when: tp_zabbix_proxy_snmptraps_enabled
+
+- name: include snmptraps if needed
+  ansible.builtin.include_tasks: snmptraps.yml
+  when: tp_zabbix_proxy_snmptraps_enabled
+
+- name: Create zabbix proxy container
+  community.docker.docker_container:
+    name: "{{ tp_zabbix_proxy_container_name }}"
+    hostname: "{{ tp_zabbix_proxy_container_hostname }}"
+    image: "{{ tp_zabbix_proxy_container_image }}:{{ tp_zabbix_proxy_container_image_version }}"
+    env: "{{ tp_zabbix_proxy_container_env }}"
+    ports: "{{ ( tp_zabbix_proxy_container_network_mode == 'host' ) | ternary(omit, tp_zabbix_proxy_container_ports) }}"
+    volumes: "{{ tp_zabbix_proxy_container_volumes | default(omit) }}"
+    restart_policy: "{{ tp_zabbix_proxy_container_restart_policy | default(omit) }}"
+    etc_hosts: "{{ tp_zabbix_proxy_container_etc_hosts | default(omit) }}"
+    networks: "{{ tp_zabbix_proxy_container_networks | default(omit) }}"
+    network_mode: "{{ tp_zabbix_proxy_container_network_mode }}"
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"
+
+- name: include java-gateway if needed
+  ansible.builtin.include_tasks: javagateway.yml
+  when: tp_zabbix_proxy_javagateway_enabled
+
+- name: Create zabbix proxy container
+  community.docker.docker_container:
+    name: "{{ tp_zabbix_proxy_container_name }}"
+    hostname: "{{ tp_zabbix_proxy_container_hostname }}"
+    image: "{{ tp_zabbix_proxy_container_image }}:{{ tp_zabbix_proxy_container_image_version }}"
+    env: "{{ tp_zabbix_proxy_container_env }}"
+    ports: "{{ ( tp_zabbix_proxy_container_network_mode == 'host' ) | ternary(omit, tp_zabbix_proxy_container_ports) }}"
+    volumes: "{{ tp_zabbix_proxy_container_volumes | default(omit) }}"
+    restart_policy: "{{ tp_zabbix_proxy_container_restart_policy | default(omit) }}"
+    etc_hosts: "{{ tp_zabbix_proxy_container_etc_hosts | default(omit) }}"
+    networks: "{{ tp_zabbix_proxy_container_networks | default(omit) }}"
+    network_mode: "{{ tp_zabbix_proxy_container_network_mode }}"
+    links:
+      - "{{ tp_zabbix_proxy_javagateway_container_name }}:zabbix-java-gateway"
+      - "{{ tp_zabbix_proxy_snmptraps_container_name }}:zabbix-snmptraps"
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"
+  when:
+    - tp_zabbix_proxy_javagateway_enabled
+    - tp_zabbix_proxy_snmptraps_enabled
+
+- name: Cleanup all unused docker resources (images, containers, networks, volumes and buildcache)
+  community.docker.docker_prune:
+    containers: "{{ tp_zabbix_proxy_prune_containers }}"
+    images: "{{ tp_zabbix_proxy_prune_images }}"
+    networks: "{{ tp_zabbix_proxy_prune_networks }}"
+    volumes: "{{ tp_zabbix_proxy_prune_volumes }}"
+    builder_cache: "{{ tp_zabbix_proxy_prune_builder_cache }}"
+  become: True
+  become_user: "{{ tp_zabbix_proxy_service_user }}"

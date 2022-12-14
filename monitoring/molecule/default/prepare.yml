@@ -1,0 +1,52 @@
+- name: Prepare
+  hosts: zabbix
+  gather_facts: yes
+
+  vars:
+    tp_zabbix_prepare_etc_hosts:
+      zabbix-server: 192.168.0.1
+      zabbix-server01: 192.168.0.10
+      zabbix-server02: 192.168.0.11
+      zabbix-web01: 192.168.0.3
+      zabbix-web02: 192.168.0.4
+      zabbix-web: 192.168.0.100
+      zabbix-proxy01: 192.168.0.5
+      zabbix-proxy02: 192.168.0.6
+      zabbix-proxy: 192.168.0.200
+      dbzabbix: 192.168.0.8
+      haproxyzabbix: 192.168.0.2
+      monitorme: 192.168.0.7
+
+  tasks:
+    - name: Ensure private IPs are configured in /etc/hosts
+      lineinfile:
+        dest: /etc/hosts
+        regexp: '.*{{ item }}$'
+        line: "{{ item.value }} {{ item.key }}"
+        state: present
+      become: True
+      loop: "{{ tp_zabbix_prepare_etc_hosts | dict2items }}"
+
+    - name: Remove unwanted entries from /etc/hosts
+      lineinfile:
+        dest: /etc/hosts
+        regexp: '127.0.2.*'
+        state: absent
+      become: True
+
+    - name: update package cache
+      apt:
+        update_cache: yes
+      become: True
+
+    - name: Install packages for testing
+      package:
+        name:
+          - gpg
+          - net-tools
+          - vim
+      become: True
+
+    - name: get certificates
+      include_role:
+        name: tp.trust_certs

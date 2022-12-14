@@ -1,0 +1,60 @@
+---
+- name: logged in with default credentials
+  ansible.builtin.debug:
+    msg: |
+      I was able to login with default credentials.  That's bad.
+      I'm going to...
+      * Create a new zabbix superadmin "{{ tp_zabbix_configure_automation_user }}"
+      * Disable the default "Admin"
+
+- name: Get "Admin" user info
+  community.zabbix.zabbix_user_info:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: Admin
+    login_password: zabbix
+    alias: Admin
+  delegate_to: localhost
+  register: default_admin
+  tags:
+    - never
+    - debug
+
+- name: Show default Admin info
+  ansible.builtin.debug:
+    msg: "{{ default_admin | to_nice_yaml(indent=2) }}"
+  tags:
+    - never
+    - debug
+
+- name: Create automation user "{{ tp_zabbix_configure_automation_user }}"
+  community.zabbix.zabbix_user:
+    server_url: "{{ tp_zabbix_configure_frontend_url }}"
+    login_user: Admin
+    login_password: zabbix
+    alias: "{{ tp_zabbix_configure_automation_user }}"
+    passwd: "{{ tp_zabbix_configure_automation_user_password }}"
+    name: Monitoring
+    surname: Administrator
+    theme: dark-theme
+    role_name: Super admin role
+    type: Zabbix super admin
+    usrgrps:
+      - Zabbix administrators
+  delegate_to: localhost
+
+- name: Logout default Admin
+  # This avoids unneeded open sessions.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: user.logout
+      auth: "{{ login_default.json.result }}"
+      params: []
+      id: 1
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost

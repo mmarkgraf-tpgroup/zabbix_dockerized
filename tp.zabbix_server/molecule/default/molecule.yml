@@ -1,0 +1,72 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+platforms:
+- name: zabbix-server01
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabnet
+    network_name: private_network
+    ip: 192.168.0.1
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix01.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix01.vdi']"
+  groups:
+    - zabbix
+    - zabbix_server
+    - zabbix_active
+  provision: True
+- name: zabbix-server02
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabnet
+    network_name: private_network
+    ip: 192.168.0.2
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix02.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbix02.vdi']"
+  groups:
+    - zabbix
+    - zabbix_server
+    - zabbix_active
+  provision: True
+- name: zabbix-database
+  box: debian/buster64
+  memory: 2048
+  interfaces:
+  - virtualbox__intnet: zabnet
+    network_name: private_network
+    ip: 192.168.0.8
+  provider_raw_config_args:
+  - "customize ['createhd', '--filename', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbixdb.vdi', '--size', 42 * 1024]"
+  - "customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--device', 0, '--port', 1, '--type', 'hdd', '--medium', '$MOLECULE_EPHEMERAL_DIRECTORY/zabbixdb.vdi']"
+  groups:
+    - zabbix
+    - zabbix_db
+  provision: True
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+  flake8 .
+provisioner:
+  name: ansible
+  inventory:
+    links:
+      group_vars: ../../../../environments/molecule/group_vars/
+      hosts: ../../../../environments/molecule/hosts.yml
+  config_options:
+    defaults:
+      vault_identity_list: ../../test/fixtures/vault_password_file
+      inventory_ignore_extensions: ~, .orig, .bak, .ini, .cfg, .retry, .pyc, .pyo, .cache
+    ssh_connection:
+      pipelining: True
+      control_path: /tmp/ansible-ssh-%%h-%%p-%%r
+verifier:
+  name: ansible

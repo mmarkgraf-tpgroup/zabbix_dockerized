@@ -1,0 +1,119 @@
+---
+tp_zabbix_agent_service_name: tp-zabbix-agent
+tp_zabbix_agent_service_user: "{{ tp_zabbix_agent_service_name }}"
+# Docker-version of the agent is always installed next to another docker-container, so we need non-default uid/gid.
+# Docker-containers run as a service-user
+# Packaged agent should be a system-user.
+tp_zabbix_agent_service_uid_docker: 5005
+tp_zabbix_agent_service_uid_package: 200
+tp_zabbix_agent_service_uid: "{{ (tp_zabbix_agent_installation_style == 'package') | ternary(tp_zabbix_agent_service_uid_package,tp_zabbix_agent_service_uid_docker) }}"
+tp_zabbix_agent_service_group: "{{ tp_zabbix_agent_service_name }}"
+tp_zabbix_agent_service_gid: "{{ tp_zabbix_agent_service_uid }}"
+
+# tp.zabbix_check and other may drop config here.
+tp_zabbix_agent_include_dir: "{{ monitoring_agent_include_dir }}"
+
+# The zabbix-agent-package adds a user 'zabbix' to the system.
+# It needs to be in the docker-group or it won't be able to fetch any docker-data.
+# If /proc is mounted with hidepid=2, you will need to add user zabbix to the appropriate group and add the group here as well.
+# Reading from /proc will require remounting /proc or a reboot.
+tp_zabbix_agent_extra_groups:
+  - docker
+
+tp_zabbix_agent_active_servers: []
+tp_zabbix_agent_passive_servers: "{{ tp_zabbix_agent_active_servers }}"
+# installation_style is either 'container' or 'package'.
+# We default to package, as the container cannot monitor its hosts filesystems without mounting them into the container.
+tp_zabbix_agent_installation_style: package
+# "tp_zabbix_agent_purge: yes" deinstalls the agent and deregisters the host
+tp_zabbix_agent_purge: false
+
+# Install from zabbix-repo?  Overwrite tp_zabbix_agent_repo with your local mirror if you have one.
+tp_zabbix_agent_use_repo: no
+tp_zabbix_agent_repo: deb https://repo.zabbix.com/zabbix/5.2/debian/ buster main
+
+# "tp_zabbix_agent_use_backports: yes" installs the agent from backports if available.
+# We fall back to the distros default package otherwise.
+# Defaults to "no" when using the repo above.
+tp_zabbix_agent_use_backports: "{{ tp_zabbix_agent_use_repo | bool | ternary('no', 'yes')  }}"
+
+# Agent can be:
+# "active"  - agent sends data to server/proxy
+# "passive" - agent waits for server/proxy to ask for data
+# "hybrid"  - actively send data and allow server/proxy to ask for it.
+tp_zabbix_agent_mode: hybrid
+
+# everything should be monitored by proxy, so we point the agents there.
+tp_zabbix_agent_zbx_server: tp-zabbix-proxy
+tp_zabbix_agent_zbx_server_ip: "{{ lookup('community.general.dig', tp_zabbix_agent_zbx_server) }}"
+tp_zabbix_agent_zbx_frontend_url: http://localhost:8080
+tp_zabbix_agent_zbx_api_url: "{{ tp_zabbix_agent_zbx_frontend_url }}/api_jsonrpc.php"
+
+tp_zabbix_agent_interface: "{{ ansible_default_ipv4.interface }}"
+
+## defaults for container zabbix_agent
+## https://hub.docker.com/r/zabbix/zabbix-agent
+tp_zabbix_agent_container_name: zabbix-agent
+tp_zabbix_agent_container_image: docker-hub/zabbix/zabbix-agent
+tp_zabbix_agent_container_image_version: alpine-latest
+tp_zabbix_agent_container_env:
+  ZBX_SERVER_HOST: "{{ tp_zabbix_agent_zbx_server }}"
+  ZBX_HOSTNAME: "{{ ansible_hostname }}"
+  ZBX_HOSTINTERFACE: "{{ tp_zabbix_agent_interface }}"
+  ZBX_ACTIVE_ALLOW: "{{ (tp_zabbix_agent_mode in ['passive', 'hybrid']) | string | lower }}"
+  ZBX_PASSIVE_ALLOW: "{{ (tp_zabbix_agent_mode in ['active', 'hybrid']) | string | lower }}"
+  ZBX_ACTIVESERVERS: "{{ tp_zabbix_agent_active_servers | flatten | sort | unique | join(',') | string }}"
+  ZBX_PASSIVESERVERS: "{{ tp_zabbix_agent_passive_servers | flatten | sort | unique | join(',') | string }}"
+tp_zabbix_agent_container_etc_hosts: {}
+tp_zabbix_agent_container_volumes:
+  - /etc/timezone:/etc/timezone:ro
+  - /etc/localtime:/etc/localtime:ro
+  - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+tp_zabbix_agent_container_restart_policy: unless-stopped
+tp_zabbix_agent_container_ports:
+  - 10050:10050
+
+## defaults for installation with packages
+tp_zabbix_agent_package: zabbix-agent2
+tp_zabbix_agent_packages_extra:
+  - zabbix-sender
+
+
+## settings for agent config
+tp_zabbix_agent_DebugLevel: 3
+tp_zabbix_agent_EnableRemoteCommands: '0'
+# tp_zabbix_agent_ListenIP: 0.0.0.0
+tp_zabbix_agent_ListenPort: '10050'
+# tp_zabbix_agent_LogFileSize: 0  # 0: disable logrotation, 1-1024: size in MB, default is 1
+tp_zabbix_agent_LogType: system
+# tp_zabbix_agent_PidFile: /var/run/zabbix/zabbix_agentd.pid
+tp_zabbix_agent_SourceIP: "{{ ansible_default_ipv4.address }}"
+tp_zabbix_agent_StartAgents: 3
+# tp_zabbix_agent_Alias:
+# tp_zabbix_agent_AllowRoot:
+# tp_zabbix_agent_BufferSend:
+# tp_zabbix_agent_BufferSize:
+# tp_zabbix_agent_HostMetadata:
+# tp_zabbix_agent_HostMetadataItem:
+# tp_zabbix_agent_HostnameItem:
+# tp_zabbix_agent_LoadModule:
+# tp_zabbix_agent_LoadModulePath:
+# tp_zabbix_agent_LogFile: /var/log/zabbix-agent/zabbix_agentd.log
+# tp_zabbix_agent_LogFileSize:
+# tp_zabbix_agent_LogRemoteCommands:
+# tp_zabbix_agent_MaxLinesPerSecond:
+tp_zabbix_agent_RefreshActiveChecks: 120
+# tp_zabbix_agent_Server:
+# tp_zabbix_agent_ServerActive:
+# tp_zabbix_agent_Timeout:
+# tp_zabbix_agent_UnsafeUserParameters:
+tp_zabbix_agent_UserParameter: []
+
+## settings for agent config specific to Windows hosts
+tp_zabbix_agent_win_LogDir: 'c:\\Logs'
+tp_zabbix_agent_win_LogFile: "{{ tp_zabbix_agent_win_LogDir }}\\zabbix_agentd.log"
+tp_zabbix_agent_win_LogType: system
+
+## Templates to link the host to.  Be sure to define these in group_vars.
+tp_zabbix_agent_register_templates:
+  - Linux by Zabbix agent active

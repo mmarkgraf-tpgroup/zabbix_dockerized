@@ -1,0 +1,168 @@
+---
+tp_zabbix_proxy_service_name: tp-zabbix-proxy
+tp_zabbix_proxy_service_user: "{{ tp_zabbix_proxy_service_name }}"
+tp_zabbix_proxy_service_group: "{{ tp_zabbix_proxy_service_user }}"
+tp_zabbix_proxy_zbx_server: tp-zabbix-server
+tp_zabbix_proxy_version: alpine-latest
+
+tp_zabbix_proxy_javagateway_enabled: True
+tp_zabbix_proxy_snmptraps_enabled: True
+
+## https://hub.docker.com/r/zabbix/zabbix-proxy-sqlite3
+tp_zabbix_proxy_container_name: "{{ tp_zabbix_proxy_service_name }}"
+tp_zabbix_proxy_container_hostname: "{{ tp_zabbix_proxy_service_name }}.{{ ansible_domain }}"
+tp_zabbix_proxy_container_image: docker-hub/zabbix/zabbix-proxy-sqlite3
+tp_zabbix_proxy_container_image_version: "{{ tp_zabbix_proxy_version }}"
+tp_zabbix_proxy_container_etc_hosts: {}
+#tp_zabbix_proxy_container_networks: []
+tp_zabbix_proxy_container_networks:
+  - name: proxynet
+    aliases:
+      - zabbix-proxy
+    links:
+      - "{{ tp_zabbix_proxy_snmptraps_container_name }}:zabbix-snmptraps"
+
+tp_zabbix_proxy_container_zbx_CacheSize: 256M
+tp_zabbix_proxy_container_zbx_HistoryCacheSize: 512M
+tp_zabbix_proxy_container_zbx_HistoryIndexCacheSize: 128M
+tp_zabbix_proxy_container_zbx_Timeout: '10'
+tp_zabbix_proxy_container_zbx_StartVMwareCollectors: '10'
+tp_zabbix_proxy_container_zbx_VMwareFrequency: '60'
+tp_zabbix_proxy_container_zbx_VMwarePerfFrequency: '60'
+tp_zabbix_proxy_container_zbx_VMwareCacheSize: 64M
+tp_zabbix_proxy_container_zbx_VMwareTimeout: '10'
+# following the inconsistent naming of the upstream here :-/
+tp_zabbix_proxy_container_zbx_javagateway_enable: "{{ tp_zabbix_proxy_javagateway_enabled }}"
+tp_zabbix_proxy_container_zbx_javagateway: "{{ tp_zabbix_proxy_javagateway_container_name }}"
+tp_zabbix_proxy_container_zbx_javagateway_port: '10052'
+tp_zabbix_proxy_container_zbx_enable_snmp_traps: "{{ tp_zabbix_proxy_snmptraps_enabled }}"
+tp_zabbix_proxy_container_zbx_StartJavaPollers: '5'
+
+tp_zabbix_proxy_container_env:
+  ZBX_SERVER_HOST: "{{ tp_zabbix_proxy_zbx_server }}"
+  # This MUST be the same name for all instances grouped with keepalived.
+  ZBX_HOSTNAME: "{{ tp_zabbix_proxy_container_hostname }}"
+  ZBX_CACHESIZE: "{{ tp_zabbix_proxy_container_zbx_CacheSize | default('8M') }}"
+  ZBX_HISTORYINDEXCACHESIZE: "{{ tp_zabbix_proxy_container_zbx_HistoryIndexCacheSize | default('4M') }}"
+  ZBX_HISTORYCACHESIZE: "{{ tp_zabbix_proxy_container_zbx_HistoryCacheSize | default('8M') }}"
+  ZBX_TIMEOUT: "{{ tp_zabbix_proxy_container_zbx_Timeout }}"
+  ZBX_STARTVMWARECOLLECTORS: "{{ tp_zabbix_proxy_container_zbx_StartVMwareCollectors }}"
+  ZBX_VMWAREFREQUENCY: "{{ tp_zabbix_proxy_container_zbx_VMwareFrequency }}"
+  ZBX_VMWAREPERFFREQUENCY: "{{ tp_zabbix_proxy_container_zbx_VMwarePerfFrequency }}"
+  ZBX_VMWARECACHESIZE: "{{ tp_zabbix_proxy_container_zbx_VMwareCacheSize }}"
+  ZBX_VMWARETIMEOUT: "{{ tp_zabbix_proxy_container_zbx_VMwareTimeout }}"
+  ZBX_JAVAGATEWAY_ENABLE: "{{ tp_zabbix_proxy_container_zbx_javagateway_enable | string }}"
+  ZBX_JAVAGATEWAY: "{{ tp_zabbix_proxy_container_zbx_javagateway }}.{{ ansible_domain }}"
+  ZBX_JAVAGATEWAYPORT: "{{ tp_zabbix_proxy_container_zbx_javagateway_port }}"
+  ZBX_ENABLE_SNMP_TRAPS: "{{ tp_zabbix_proxy_container_zbx_enable_snmp_traps | string }}"
+  ZBX_STARTJAVAPOLLERS: "{{ tp_zabbix_proxy_container_zbx_StartJavaPollers }}"
+
+tp_zabbix_proxy_container_default_volumes:
+  - /etc/timezone:/etc/timezone:ro
+  - /etc/localtime:/etc/localtime:ro
+  - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+
+tp_zabbix_proxy_container_extra_volumes: []
+#  - /usr/lib/externalscripts
+#  - /var/lib/db_data
+#  - /var/lib/modules
+#  - /var/lib/enc
+#  - /var/lib/ssh_keys
+#  - /var/lib/ssl/certs
+#  - /var/lib/ssl/keys
+#  - /var/lib/ssl/ssl_ca
+#  - /var/lib/snmptraps
+#  - /var/lib/mibs
+
+# ! Do NOT wrap this line!
+tp_zabbix_proxy_container_volumes: "{{ (tp_zabbix_proxy_container_default_volumes + tp_zabbix_proxy_container_extra_volumes) | map('regex_replace', '(/var/lib|/usr/lib)(.*)', '/srv/' + tp_zabbix_proxy_service_name + '\\2:\\1/zabbix\\2:ro') | list }}"
+# - /etc/timezone:/etc/timezone:ro
+# - /etc/localtime:/etc/localtime:ro
+# - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+# - /srv/monitoring-proxy/externalscripts:/usr/lib/zabbix/externalscripts:ro
+# - /srv/monitoring-proxy/db_data:/var/lib/zabbix/db_data:ro
+# - /srv/monitoring-proxy/modules:/var/lib/zabbix/modules:ro
+# - /srv/monitoring-proxy/enc:/var/lib/zabbix/enc:ro
+# - /srv/monitoring-proxy/ssh_keys:/var/lib/zabbix/ssh_keys:ro
+# - /srv/monitoring-proxy/ssl/certs:/var/lib/zabbix/ssl/certs:ro
+# - /srv/monitoring-proxy/ssl/keys:/var/lib/zabbix/ssl/keys:ro
+# - /srv/monitoring-proxy/ssl/ssl_ca:/var/lib/zabbix/ssl/ssl_ca:ro
+# - /srv/monitoring-proxy/snmptraps:/var/lib/zabbix/snmptraps:ro
+# - /srv/monitoring-proxy/mibs:/var/lib/zabbix/mibs:ro
+
+tp_zabbix_proxy_container_restart_policy: unless-stopped
+tp_zabbix_proxy_container_ports:
+  - 10051:10051
+#tp_zabbix_proxy_container_network_mode: host
+tp_zabbix_proxy_container_network_mode: default
+
+## defaults for javagateway
+## https://hub.docker.com/r/zabbix/zabbix-java-gateway
+## https://www.zabbix.com/documentation/5.2/en/manual/concepts/java/from_debian_ubuntu
+## https://www.zabbix.com/documentation/5.2/en/manual/config/items/itemtypes/jmx_monitoring
+##
+## search for 'Dcom.sun.management.jmxremote' in this repo.
+## Todo: configure all applications to allow access from the envs monitoring-proxy
+tp_zabbix_proxy_javagateway_container_name: "{{ tp_zabbix_proxy_service_name }}-java-gateway"
+tp_zabbix_proxy_javagateway_container_image: zabbix/zabbix-java-gateway
+tp_zabbix_proxy_javagateway_container_image_version: "{{ tp_zabbix_proxy_version }}"
+tp_zabbix_proxy_javagateway_container_env:
+  ZBX_START_POLLERS: '5'
+  ZBX_TIMEOUT: '3'
+  # trace, debug, info, warn, error, all, off
+  ZBX_DEBUGLEVEL: info
+  # * yes, naming is inconsistent.  See /usr/sbin/zabbix_java_gateway in the container.
+  ZABBIX_OPTIONS: '-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.registry.ssl=false'
+tp_zabbix_proxy_javagateway_container_volumes:
+  - /etc/timezone:/etc/timezone:ro
+  - /etc/localtime:/etc/localtime:ro
+  - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+  #- /usr/sbin/zabbix_java/ext_lib
+tp_zabbix_proxy_javagateway_container_restart_policy: unless-stopped
+tp_zabbix_proxy_javagateway_container_ports:
+  - 10052:10052
+tp_zabbix_proxy_javagateway_container_etc_hosts: {}
+#tp_zabbix_proxy_javagateway_container_networks: []
+tp_zabbix_proxy_javagateway_container_networks:
+  - name: proxynet
+    aliases:
+      - zabbix-java-gateway
+    links:
+      - "{{ tp_zabbix_proxy_container_hostname }}:zabbix-proxy"
+      - "{{ tp_zabbix_proxy_container_hostname }}:zabbix-server"
+
+## defaults for snmptraps
+## https://hub.docker.com/r/zabbix/zabbix-snmptraps
+tp_zabbix_proxy_snmptraps_container_name: "{{ tp_zabbix_proxy_service_name }}-snmptraps"
+tp_zabbix_proxy_snmptraps_container_image: zabbix/zabbix-snmptraps
+tp_zabbix_proxy_snmptraps_container_image_version: "{{ tp_zabbix_proxy_version }}"
+tp_zabbix_proxy_snmptraps_container_env: {}
+tp_zabbix_proxy_snmptraps_container_volumes:
+  - /etc/timezone:/etc/timezone:ro
+  - /etc/localtime:/etc/localtime:ro
+  - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates:ro
+  #- /var/lib/zabbix/snmptraps
+  #- /var/lib/zabbix/mibs
+tp_zabbix_proxy_snmptraps_container_restart_policy: unless-stopped
+tp_zabbix_proxy_snmptraps_container_ports:
+  - 1162:1162
+tp_zabbix_proxy_snmptraps_container_etc_hosts: {}
+#tp_zabbix_proxy_snmptraps_container_networks: []
+tp_zabbix_proxy_snmptraps_container_networks:
+  - name: proxynet
+    aliases:
+      - zabbix-snmptraps
+
+## defaults for keepalived used with zabbix_proxy
+tp_zabbix_proxy_keepalived_check_process: zabbix_proxy
+tp_zabbix_proxy_keepalived_state: "{{ (ansible_hostname[-2:] == '01') | ternary('MASTER', 'BACKUP') }}"
+tp_zabbix_proxy_keepalived_vip_hostnames: "{{ [tp_zabbix_proxy_service_name] }}"
+tp_zabbix_proxy_keepalived_vip_interface: "{{ ansible_default_ipv4.interface }}"
+tp_zabbix_proxy_keepalived_virtual_router_id: "{{ monitoring_proxy_keepalived_virtual_router_id }}"
+
+## cleanup dangling containers
+tp_zabbix_proxy_prune_containers: True
+tp_zabbix_proxy_prune_images: True
+tp_zabbix_proxy_prune_networks: True
+tp_zabbix_proxy_prune_volumes: True
+tp_zabbix_proxy_prune_builder_cache: True

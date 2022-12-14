@@ -1,0 +1,30 @@
+- name: Disable and stop the zabbix-agent service
+  ansible.builtin.service:
+    name: "{{ tp_zabbix_agent_package }}"
+    enabled: no
+    state: stopped
+  become: True
+
+- name: Delete config for zabbix-agent
+  # Doing this before removal of the package.
+  # Deinstalling the package will remove /etc/zabbix if it is empty.
+  ansible.builtin.file:
+    dest: /etc/zabbix/zabbix_agentd.conf
+    state: absent
+  when: tp_zabbix_agent_package == 'zabbix-agent'
+  become: True
+
+- name: Delete config for zabbix-agent2
+  # Doing this before removal of the package.
+  # Deinstalling the package will remove /etc/zabbix if it is empty.
+  ansible.builtin.file:
+    dest: /etc/zabbix/zabbix_agent2.conf
+    state: absent
+  when: tp_zabbix_agent_package == 'zabbix-agent2'
+  become: True
+
+- name: Remove packaged zabbix-client
+  ansible.builtin.package:
+    name: "{{ tp_zabbix_agent_package }}"
+    state: absent
+  become: True

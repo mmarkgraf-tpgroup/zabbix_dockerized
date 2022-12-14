@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }} by {{ ansible_role_name }}
+#===============================================================================
+#
+#          FILE: chk_process.sh
+#
+#         USAGE: ./chk_process.sh
+#
+#        AUTHOR: Marco Markgraf (mma), marco.markgraf@transporeon.com
+#  ORGANIZATION: transporeon.com
+#       CREATED: 2021-05-25 11:08
+#       license: BSD-3-CLAUSE
+#      REVISION:  ---
+#===============================================================================
+
+#=== Init ======================================================================
+set -o nounset   # exit on unset variables.
+#set -o errexit   # exit on any error.
+set -o errtrace  # any trap on ERR is inherited
+#set -o xtrace    # show expanded command before execution.
+
+unalias -a       # avoid rm being aliased to rm -rf and similar issues
+LANG=C           # avoid locale issues
+
+#=== Main ======================================================================
+
+container_status="$(/usr/bin/docker container inspect -f {% raw %}{{.State.Status}}{% endraw %} zabbix-server)"
+
+if [[ $container_status == running ]] || [[ ${HOSTNAME: -2} != 01 ]]; then
+    exit 0
+else
+    exit 1
+fi

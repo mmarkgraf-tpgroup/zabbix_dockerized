@@ -1,0 +1,14 @@
+---
+# defaults file for monitoring_proxy
+monitoring_proxy_service_name: monitoring-proxy
+monitoring_proxy_zbx_server: monitoring-server.some.where
+
+monitoring_proxy_container_image: pitops/zabbix_proxy
+monitoring_proxy_javagateway_container_image: pitops/zabbix_javagateway
+monitoring_proxy_snmptraps_container_image: pitops/zabbix_snmptraps
+monitoring_proxy_container_image_version: stable
+
+# * Please note:
+# * DNS-Aliases for 'monitoring-proxy-snmptraps' and 'monitoring-proxy-java-gateway' pointing to 'monitoring-proxy' must be set!
+monitoring_proxy_snmptraps_enabled: True
+monitoring_proxy_javagateway_enabled: True

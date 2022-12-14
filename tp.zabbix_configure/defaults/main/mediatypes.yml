@@ -1,0 +1,21 @@
+---
+tp_zabbix_configure_mediatypes: []
+
+#! Follow the instruction on https://www.zabbix.com/de/integrations/telegram
+#! before you try to use the telegram mediatype.
+
+# paste the token you got from the Telegram BotFather.
+#! CAUTION: there are multiple accounts pretending to be BotFather.  Look closely!
+# The real deals is a verified bot. '@BotFather', no underscores, dashes or whatever!
+tp_zabbix_configure_mediatype_telegram_token: your-token-here
+
+# Fill the "To:"-field with the ID of the chatgroup you use for Alerting.
+# you can get that by inviting '@myidbot' to the group and sending  "/getgroupid@myidbot"
+tp_zabbix_configure_mediatype_telegram_bot_id: your-bot-id
+
+tp_zabbix_configure_mediatype_ilert_alert_sendto: your-token-here
+
+tp_zabbix_configure_mediatype_trigger_severity: 'High'
+tp_zabbix_configure_mediatype_host_group: production
+tp_zabbix_configure_mediatype_timeperiod_workhours: '1-5,07:30-18:00'
+tp_zabbix_configure_mediatype_oncall_prefix: 00_oncall_

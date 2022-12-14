@@ -1,0 +1,16 @@
+---
+- name: Remove zabbix agent container
+  community.docker.docker_container:
+    name: "{{ tp_zabbix_agent_container_name }}"
+    state: absent
+  become: True
+  become_user: "{{ tp_zabbix_agent_service_name }}"
+
+- name: Remove image
+  community.docker.docker_image:
+    name: "{{ tp_zabbix_agent_container_image }}"
+    state: absent
+    tag: "{{ tp_zabbix_agent_container_image_version }}"
+    # untag and remove ALL images matching
+    force_absent: yes
+  become: True

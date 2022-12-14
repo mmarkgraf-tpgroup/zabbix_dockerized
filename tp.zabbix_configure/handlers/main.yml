@@ -1,0 +1,17 @@
+---
+- name: Logout of Zabbix
+  # This avoids unneeded open sessions.
+  ansible.builtin.uri:
+    url: "{{ tp_zabbix_configure_api_url }}"
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json-rpc
+    body:
+      jsonrpc: '2.0'
+      method: user.logout
+      auth: "{{ login.json.result }}"
+      params: []
+      id: 2
+    timeout: "{{ tp_zabbix_configure_api_timeout }}"
+  delegate_to: localhost

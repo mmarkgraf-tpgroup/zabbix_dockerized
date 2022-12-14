@@ -1,0 +1,25 @@
+---
+- name: Verify
+  hosts: zabbix_web
+  tasks:
+  - name: Login to Zabbix
+    uri:
+      url: http://localhost:8080/
+      method: POST
+      body_format: form-urlencoded
+      body:
+        name: Admin
+        password: zabbix
+        enter: Sign in
+      status_code: 302
+    register: login
+
+  - name: Check if Zabbix Dashboard is functional
+    uri:
+      url: http://localhost:8080/zabbix.php?action=dashboard.view
+      method: GET
+      return_content: yes
+      headers:
+        Cookie: "{{ login.set_cookie }}"
+    register: this
+    failed_when: "'Global view' not in this.content"

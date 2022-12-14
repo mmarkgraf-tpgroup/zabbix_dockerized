@@ -1,0 +1,42 @@
+---
+galaxy_info:
+  role_name: dbmonitoring
+  author: marco.markgraf@transporeon.com
+  description: DB for monitoring
+  company: Transporeon Group
+  license: BSD-3-CLAUSE
+  min_ansible_version: '1.3'
+  platforms:
+    - name: Debian
+      versions:
+        - buster
+  galaxy_tags:
+    - VMware
+dependencies: []
+  ## role is not published, you need to setup your DB otherwise, I'm afraid.
+  # - role: tp.db
+  #   tp_db_data_lv_size: "{{ dbmonitoring_data_lv_size }}"
+  #   tp_db_xlog_lv_size: "{{ dbmonitoring_xlog_lv_size }}"
+  #   tp_db_archive_lv_size: "{{ dbmonitoring_archive_lv_size }}"
+  #   tp_db_service_name: "{{ dbmonitoring_service_name }}"
+  #   tp_db_service_pg_hba_custom: "{{ dbmonitoring_pg_hba }}"
+  #   tp_db_user_role_attr_flags: "{{ dbmonitoring_user_role_attr_flags }}"
+  #   tp_db_disks: "{{ dbmonitoring_disks }}"
+  #   tp_db_holdback_days_backup: "{{ dbmonitoring_holdback_days_backup }}"
+  #   tp_db_holdback_days_wal: "{{ dbmonitoring_holdback_days_wal }}"
+  #   tp_db_archive_mode: "{{ dbmonitoring_db_archive_mode }}"
+  #   tp_db_hostname_state_relation: "{{ dbmonitoring_hostname_state_relation }}"
+  #   tp_db_shared_buffers: "{{ dbmonitoring_shared_buffers }}"
+  #   tp_db_effective_cache_size: "{{ dbmonitoring_effective_cache_size }}"
+  #   tp_db_storage_backup_host: "{{ dbmonitoring_storage_backup_host }}"
+  #   tp_db_storage_archive_host: "{{ dbmonitoring_storage_archive_host }}"
+  #   tp_db_maintenance_work_mem: "{{ dbmonitoring_maintenance_work_mem }}"
+  #   tp_db_checkpoint_completion_target: "{{ dbmonitoring_checkpoint_completion_target }}"
+  #   tp_db_random_page_cost: "{{ dbmonitoring_random_page_cost }}"
+  #   tp_db_effective_io_concurrency: "{{ dbmonitoring_effective_io_concurrency }}"
+  #   tp_db_work_mem: "{{ dbmonitoring_work_mem }}"
+  #   tp_db_min_wal_size: "{{ dbmonitoring_min_wal_size }}"
+  #   tp_db_max_wal_size: "{{ dbmonitoring_max_wal_size }}"
+  #   tp_db_max_parallel_workers_per_gather: "{{ dbmonitoring_max_parallel_workers_per_gather }}"
+  #   tp_db_max_parallel_workers: "{{ dbmonitoring_max_parallel_workers }}"
+  #   tp_db_max_parallel_maintenance_workers: "{{ dbmonitoring_max_parallel_maintenance_workers }}"

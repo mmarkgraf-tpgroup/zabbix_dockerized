@@ -1,0 +1,19 @@
+---
+- name: "Ensure folder {{ tp_zabbix_check_agentd_conf_dir }} exists"
+  ansible.builtin.file:
+    path: "{{ tp_zabbix_check_agentd_conf_dir }}"
+    state: directory
+    mode: 0755
+  become: True
+
+- name: Ensure UserParameters are configured on the system
+  ansible.builtin.template:
+    src: UserParameters.conf.j2
+    dest: "{{ tp_zabbix_check_agentd_conf_dir }}/UserParameter.{{ loop_user_parameter.key | replace('[*]','') }}.conf"
+    mode: 0644
+  become: True
+  notify: restart zabbix-agent
+  loop: "{{ tp_zabbix_check_user_parameter | dict2items }}"
+  loop_control:
+    loop_var: loop_user_parameter
+  when: tp_zabbix_check_user_parameter | length > 0

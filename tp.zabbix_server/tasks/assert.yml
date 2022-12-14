@@ -1,0 +1,159 @@
+---
+# Sanity-Checks in order to fail early...
+
+- name: test if tp_zabbix_server_service_name is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_service_name is defined
+      - tp_zabbix_server_service_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_service_user is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_service_user is defined
+      - tp_zabbix_server_service_user is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_service_group is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_service_group is defined
+      - tp_zabbix_server_service_group is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_db_host is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_db_host is defined
+      - tp_zabbix_server_db_host is string
+
+- name: test if tp_zabbix_server_db_port is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_db_port is defined
+      - tp_zabbix_server_db_port is number
+    quiet: yes
+
+- name: test if tp_zabbix_server_db_name is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_db_name is defined
+      - tp_zabbix_server_db_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_db_user is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_db_user is defined
+      - tp_zabbix_server_db_user is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_db_password is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_db_password is defined
+      - tp_zabbix_server_db_password is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_hostinterface is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_hostinterface is defined
+      - tp_zabbix_server_hostinterface is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_container_name is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_name is defined
+      - tp_zabbix_server_container_name is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_container_image is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_image is defined
+      - tp_zabbix_server_container_image is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_container_image_version is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_image_version is defined
+      - tp_zabbix_server_container_image_version is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_container_restart_policy is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_restart_policy is defined
+      - tp_zabbix_server_container_restart_policy is string
+      - tp_zabbix_server_container_restart_policy is in ['always', 'unless-stopped', 'no', 'on-failure']
+    quiet: yes
+
+- name: test if tp_zabbix_server_container_etc_hosts is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_etc_hosts is defined
+      - tp_zabbix_server_container_etc_hosts | type_debug == 'dict'
+    quiet: yes
+
+- name: test if ip tp_zabbix_server_container_etc_hosts in are all valid
+  assert:
+    that:
+      - loop_ip.value | ansible.netcommon.ipaddr
+    quiet: yes
+  loop: "{{ tp_zabbix_server_container_etc_hosts | dict2items }}"
+  loop_control:
+    loop_var: loop_ip
+
+- name: test if tp_zabbix_server_container_env is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_env is defined
+      - tp_zabbix_server_container_env | type_debug == 'dict'
+    quiet: yes
+
+- name: test if tp_zabbix_server_container_volumes is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_volumes is defined
+      - tp_zabbix_server_container_volumes | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_server_container_ports is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_container_ports is defined
+      - tp_zabbix_server_container_ports | type_debug == 'list'
+    quiet: yes
+
+
+- name: test if tp_zabbix_server_keepalived_state is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_keepalived_state is defined
+      - tp_zabbix_server_keepalived_state in ['MASTER', 'BACKUP']
+    quiet: yes
+
+- name: test if tp_zabbix_server_keepalived_vip_hostnames is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_keepalived_vip_hostnames is defined
+      - tp_zabbix_server_keepalived_vip_hostnames | type_debug == 'list'
+    quiet: yes
+
+- name: test if tp_zabbix_server_keepalived_vip_interface is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_keepalived_vip_interface is defined
+      - tp_zabbix_server_keepalived_vip_interface is string
+    quiet: yes
+
+- name: test if tp_zabbix_server_keepalived_virtual_router_id is set correctly
+  assert:
+    that:
+      - tp_zabbix_server_keepalived_virtual_router_id is defined
+      - tp_zabbix_server_keepalived_virtual_router_id is number
+    quiet: yes

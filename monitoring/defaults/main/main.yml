@@ -1,0 +1,12 @@
+---
+# defaults file for monitoring
+monitoring_service_name: monitoring
+monitoring_service_user: "{{ monitoring_service_name }}"
+monitoring_service_group: "{{ monitoring_service_user }}"
+monitoring_db_host: dbmonitoring.some.where
+monitoring_db_name: monitoring
+monitoring_db_username: monitoring
+monitoring_db_password: Sup3rS3cr3t
+monitoring_zabbix_server: monitoring-server.some.where
+monitoring_ldap_validate_certs: no
+monitoring_frontend_container_image_version: alpine-5.2-latest
